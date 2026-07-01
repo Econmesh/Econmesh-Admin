@@ -344,3 +344,85 @@ export interface AdminCompanyListResponse {
   page_size: number;
   has_more: boolean;
 }
+
+export type NotificationChannel = "in_app" | "email";
+export type NotificationTargetType = "all" | "users" | "groups";
+export type NotificationCampaignStatus =
+  | "draft"
+  | "scheduled"
+  | "processing"
+  | "sent"
+  | "failed"
+  | "cancelled";
+
+export interface NotificationGroup {
+  id: string;
+  name: string;
+  description: string | null;
+  user_ids: string[];
+  created_by: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationGroupListResponse {
+  items: NotificationGroup[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface NotificationGroupCreatePayload {
+  name: string;
+  description?: string | null;
+  user_ids: string[];
+}
+
+export interface NotificationGroupUpdatePayload {
+  name?: string;
+  description?: string | null;
+  user_ids?: string[];
+  is_active?: boolean;
+}
+
+export interface NotificationCampaignStats {
+  total: number;
+  delivered: number;
+  failed: number;
+}
+
+export interface NotificationCampaign {
+  id: string;
+  title: string;
+  body: string;
+  channels: NotificationChannel[];
+  target_type: NotificationTargetType;
+  target_user_ids: string[];
+  target_group_ids: string[];
+  send_at: string | null;
+  status: NotificationCampaignStatus;
+  stats: NotificationCampaignStats;
+  created_by: string;
+  sent_at: string | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationCampaignListResponse {
+  items: NotificationCampaign[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface NotificationCampaignCreatePayload {
+  title: string;
+  body: string;
+  channels: NotificationChannel[];
+  target_type: NotificationTargetType;
+  target_user_ids?: string[];
+  target_group_ids?: string[];
+  send_at?: string | null;
+}
