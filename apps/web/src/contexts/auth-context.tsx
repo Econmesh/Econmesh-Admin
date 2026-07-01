@@ -22,6 +22,7 @@ import { toast } from "sonner";
 
 import { getFirebaseAuth } from "@/lib/firebase";
 import { authService } from "@/services/auth/auth.service";
+import { adminSupportService } from "@/services/admin/support.service";
 import {
   setApiTokenProvider,
   setApiUnauthorizedHandler,
@@ -195,6 +196,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signOutUser = useCallback(async () => {
+    try {
+      await adminSupportService.goOffline();
+    } catch {
+      /* best effort */
+    }
     try {
       await authService.logout();
     } catch {
