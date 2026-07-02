@@ -14,7 +14,7 @@ import { usePathname } from "next/navigation";
 import { toast } from "sonner";
 
 import { useAuth } from "@/hooks/use-auth";
-import { ticketIdFromEvent } from "@/modules/support/support-realtime";
+import { ticketIdFromEvent, normalizeTicketId } from "@/modules/support/support-realtime";
 import {
   adminSupportService,
   type SupportStreamEvent,
@@ -52,7 +52,7 @@ type SupportContextValue = {
 const SupportContext = createContext<SupportContextValue | null>(null);
 
 function isViewingTicket(pathname: string | null, ticketId: string) {
-  return pathname === `/dashboard/suporte/${ticketId}`;
+  return pathname?.toLowerCase() === `/dashboard/suporte/${normalizeTicketId(ticketId)}`;
 }
 
 export function SupportProvider({ children }: { children: ReactNode }) {
@@ -72,16 +72,18 @@ export function SupportProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const dismissAlertsForTicket = useCallback((ticketId: string) => {
-    setAlerts((prev) => prev.filter((a) => a.ticketId !== ticketId));
+    const key = normalizeTicketId(ticketId);
+    setAlerts((prev) => prev.filter((a) => normalizeTicketId(a.ticketId) !== key));
   }, []);
 
   const dismissAllAlerts = useCallback(() => setAlerts([]), []);
 
   const subscribeTicket = useCallback((ticketId: string, listener: TicketListener) => {
+    const key = normalizeTicketId(ticketId);
     const map = listenersRef.current;
-    if (!map.has(ticketId)) map.set(ticketId, new Set());
-    map.get(ticketId)!.add(listener);
-    return () => map.get(ticketId)?.delete(listener);
+    if (!map.has(key)) map.set(key, new Set());
+    map.get(key)!.add(listener);
+    return () => map.get(key)?.delete(listener);
   }, []);
 
   const subscribeGlobal = useCallback((listener: GlobalListener) => {
@@ -116,7 +118,7 @@ export function SupportProvider({ children }: { children: ReactNode }) {
     }
 
     if (ticketId) {
-      listenersRef.current.get(ticketId)?.forEach((l) => l(event));
+      listenersRef.current.get(normalizeTicketId(ticketId))?.forEach((l) => l(event));
     }
 
     if (event.type === "ping") return;

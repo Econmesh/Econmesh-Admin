@@ -2,10 +2,12 @@
 
 import { cn } from "@econmesh-admin/ui/lib/utils";
 import { Check, CheckCheck } from "lucide-react";
+import { useEffect, useRef } from "react";
 import type { SupportMessage } from "@/types/api";
 
 type Props = {
   messages: SupportMessage[];
+  autoScroll?: boolean;
 };
 
 function formatTime(iso: string) {
@@ -17,7 +19,18 @@ function formatTime(iso: string) {
   });
 }
 
-export function SupportMessageThread({ messages }: Props) {
+export function SupportMessageThread({ messages, autoScroll }: Props) {
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const prevCountRef = useRef(messages.length);
+
+  useEffect(() => {
+    if (!autoScroll) return;
+    if (messages.length >= prevCountRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+    prevCountRef.current = messages.length;
+  }, [messages, autoScroll]);
+
   if (messages.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma mensagem.</p>
@@ -80,6 +93,7 @@ export function SupportMessageThread({ messages }: Props) {
           </div>
         );
       })}
+      <div ref={bottomRef} aria-hidden />
     </div>
   );
 }

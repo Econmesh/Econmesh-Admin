@@ -17,8 +17,9 @@ import { toast } from "sonner";
 import { useSupport } from "@/contexts/support-context";
 import { SupportMessageThread } from "@/modules/support/components/support-message-thread";
 import { UserOnlineBadge } from "@/modules/support/components/user-online-badge";
+import { useTicketMessagesRealtime } from "@/modules/support/hooks/use-ticket-messages-realtime";
 import { SUPPORT_STATUS_LABELS } from "@/modules/support/schemas";
-import { applySupportStreamEvent } from "@/modules/support/support-realtime";
+import { messagesFingerprint } from "@/modules/support/support-realtime";
 import {
   adminSupportService,
   formatTicketNumber,
@@ -33,7 +34,7 @@ type Props = {
 type ComposerMode = "reply" | "note";
 
 export function SupportTicketDetailView({ ticketId }: Props) {
-  const { subscribeTicket, subscribePresence, dismissAlertsForTicket } = useSupport();
+  const { subscribePresence, dismissAlertsForTicket } = useSupport();
   const [ticket, setTicket] = useState<SupportTicketDetail | null>(null);
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [composerMode, setComposerMode] = useState<ComposerMode>("reply");
@@ -43,7 +44,13 @@ export function SupportTicketDetailView({ ticketId }: Props) {
   const [closing, setClosing] = useState(false);
   const [reopening, setReopening] = useState(false);
   const messagesRef = useRef(messages);
+  const fingerprintRef = useRef("");
   messagesRef.current = messages;
+
+  const fetchMessages = useCallback(async () => {
+    const m = await adminSupportService.listMessages(ticketId);
+    return m.items;
+  }, [ticketId]);
 
   const loadTicket = useCallback(async () => {
     const t = await adminSupportService.get(ticketId);
@@ -54,10 +61,12 @@ export function SupportTicketDetailView({ ticketId }: Props) {
   const loadMessages = useCallback(async (markRead = false) => {
     if (markRead) {
       const m = await adminSupportService.markMessagesRead(ticketId);
+      fingerprintRef.current = messagesFingerprint(m.items);
       setMessages(m.items);
       return;
     }
     const m = await adminSupportService.listMessages(ticketId);
+    fingerprintRef.current = messagesFingerprint(m.items);
     setMessages(m.items);
   }, [ticketId]);
 
@@ -89,28 +98,13 @@ export function SupportTicketDetailView({ ticketId }: Props) {
     });
   }, [ticket?.user_id, subscribePresence]);
 
-  useEffect(() => {
-    return subscribeTicket(ticketId, (event) => {
-      if (event.type === "message_created" || event.type === "messages_read") {
-        const next = applySupportStreamEvent(event, messagesRef.current);
-        if (next) {
-          setMessages(next);
-          return;
-        }
-      }
-      if (
-        event.type === "message_created" ||
-        event.type === "ticket_closed" ||
-        event.type === "ticket_reopened" ||
-        event.type === "messages_read"
-      ) {
-        void loadTicket();
-        if (event.type !== "messages_read") {
-          void loadMessages(true);
-        }
-      }
-    });
-  }, [ticketId, subscribeTicket, loadTicket, loadMessages]);
+  useTicketMessagesRealtime({
+    ticketId,
+    messagesRef,
+    setMessages,
+    fetchMessages,
+    fetchTicket: loadTicket,
+  });
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
@@ -124,7 +118,9 @@ export function SupportTicketDetailView({ ticketId }: Props) {
       setText("");
       setMessages((prev) => {
         if (prev.some((m) => m.id === sent.id)) return prev;
-        return [...prev, sent];
+        const next = [...prev, sent];
+        fingerprintRef.current = messagesFingerprint(next);
+        return next;
       });
       if (composerMode === "note") {
         setComposerMode("reply");
@@ -230,7 +226,7 @@ export function SupportTicketDetailView({ ticketId }: Props) {
         <TabsContent value="messages">
           <div className="flex min-h-[480px] flex-col overflow-hidden rounded-xl border border-border bg-card">
             <div className="flex-1 overflow-y-auto">
-              <SupportMessageThread messages={messages} />
+              <SupportMessageThread messages={messages} autoScroll />
             </div>
             {!isClosed && (
               <form

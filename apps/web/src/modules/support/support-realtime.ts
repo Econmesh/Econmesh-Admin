@@ -38,5 +38,45 @@ export function applySupportStreamEvent(
 
 export function ticketIdFromEvent(event: SupportStreamEvent): string | undefined {
   const id = event.data?.ticket_id;
-  return id != null ? String(id) : undefined;
+  return id != null ? normalizeTicketId(String(id)) : undefined;
+}
+
+export function normalizeTicketId(id: string): string {
+  return id.trim().toLowerCase();
+}
+
+type TicketStreamHandlerContext = {
+  messagesRef: { current: SupportMessage[] };
+  setMessages: (messages: SupportMessage[]) => void;
+  fetchMessages: () => Promise<SupportMessage[]>;
+  fetchTicket?: () => Promise<void>;
+};
+
+/** Apply a realtime event to the thread, fetching from API when the payload is incomplete. */
+export function handleTicketStreamEvent(
+  event: SupportStreamEvent,
+  ctx: TicketStreamHandlerContext,
+): void {
+  if (event.type === "ping") return;
+
+  if (event.type === "message_created" || event.type === "messages_read") {
+    const next = applySupportStreamEvent(event, ctx.messagesRef.current);
+    if (next) {
+      ctx.setMessages(next);
+      return;
+    }
+    void ctx.fetchMessages().then(ctx.setMessages);
+    return;
+  }
+
+  if (event.type === "ticket_closed" || event.type === "ticket_reopened") {
+    void ctx.fetchTicket?.();
+    void ctx.fetchMessages().then(ctx.setMessages);
+  }
+}
+
+export function messagesFingerprint(messages: SupportMessage[]): string {
+  if (messages.length === 0) return "0";
+  const last = messages[messages.length - 1];
+  return `${messages.length}:${last?.id ?? ""}:${last?.read_at ?? ""}`;
 }

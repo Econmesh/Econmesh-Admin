@@ -79,6 +79,36 @@ async function* parseSseStream(
   }
 }
 
+async function* openSupportStream(
+  path: string,
+  getToken: TokenProvider,
+  signal?: AbortSignal,
+): AsyncGenerator<SupportStreamEvent> {
+  const base = env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
+  const token = await getToken();
+  if (!token) throw new Error("missing_auth_token");
+
+  const response = await fetch(`${base}${API_V1_PREFIX}${path}`, {
+    headers: {
+      Accept: "text/event-stream",
+      Authorization: `Bearer ${token}`,
+      "Cache-Control": "no-cache",
+    },
+    signal,
+    cache: "no-store",
+  });
+
+  if (!response.ok || !response.body) throw new Error(`stream_failed_${response.status}`);
+
+  for await (const { eventType, data } of parseSseStream(response)) {
+    if (eventType === "ping") {
+      yield { type: "ping" };
+      continue;
+    }
+    yield { type: eventType as SupportStreamEventType, data };
+  }
+}
+
 export const adminSupportService = {
   list(params: {
     page?: number;
@@ -152,29 +182,15 @@ export const adminSupportService = {
   },
 
   async *stream(getToken: TokenProvider, signal?: AbortSignal): AsyncGenerator<SupportStreamEvent> {
-    const base = env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
-    const token = await getToken();
-    if (!token) throw new Error("missing_auth_token");
+    yield* openSupportStream("/admin/support/stream", getToken, signal);
+  },
 
-    const response = await fetch(`${base}${API_V1_PREFIX}/admin/support/stream`, {
-      headers: {
-        Accept: "text/event-stream",
-        Authorization: `Bearer ${token}`,
-        "Cache-Control": "no-cache",
-      },
-      signal,
-      cache: "no-store",
-    });
-
-    if (!response.ok) throw new Error(`stream_failed_${response.status}`);
-
-    for await (const { eventType, data } of parseSseStream(response)) {
-      if (eventType === "ping") {
-        yield { type: "ping" };
-        continue;
-      }
-      yield { type: eventType as SupportStreamEventType, data };
-    }
+  async *ticketStream(
+    ticketId: string,
+    getToken: TokenProvider,
+    signal?: AbortSignal,
+  ): AsyncGenerator<SupportStreamEvent> {
+    yield* openSupportStream(`/admin/support/tickets/${ticketId}/stream`, getToken, signal);
   },
 };
 
