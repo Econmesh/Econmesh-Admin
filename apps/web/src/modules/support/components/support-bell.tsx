@@ -4,6 +4,7 @@ import { Button } from "@econmesh-admin/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -33,7 +34,9 @@ export function SupportBell() {
         }
       />
       <DropdownMenuContent align="end" sideOffset={8} className="w-80">
-        <DropdownMenuLabel>Chamados de suporte</DropdownMenuLabel>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Chamados de suporte</DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         {alerts.length === 0 ? (
           <p className="px-2 py-4 text-center text-sm text-muted-foreground">

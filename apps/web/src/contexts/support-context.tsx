@@ -10,8 +10,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { usePathname } from "next/navigation";
-import { toast } from "sonner";
 
 import { useAuth } from "@/hooks/use-auth";
 import { ticketIdFromEvent, normalizeTicketId } from "@/modules/support/support-realtime";
@@ -51,15 +49,8 @@ type SupportContextValue = {
 
 const SupportContext = createContext<SupportContextValue | null>(null);
 
-function isViewingTicket(pathname: string | null, ticketId: string) {
-  return pathname?.toLowerCase() === `/dashboard/suporte/${normalizeTicketId(ticketId)}`;
-}
-
 export function SupportProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading, user, getIdToken } = useAuth();
-  const pathname = usePathname();
-  const pathnameRef = useRef(pathname);
-  pathnameRef.current = pathname;
 
   const [alerts, setAlerts] = useState<SupportAlert[]>([]);
   const [refreshSignal, setRefreshSignal] = useState(0);
@@ -124,34 +115,6 @@ export function SupportProvider({ children }: { children: ReactNode }) {
     if (event.type === "ping") return;
 
     notifyGlobal();
-
-    if (!ticketId) return;
-
-    const messageType = event.data?.message_type as string | undefined;
-    if (event.type === "message_created" && messageType === "admin_reply") return;
-    if (event.type === "message_created" && messageType === "internal_note") return;
-
-    const viewing = isViewingTicket(pathnameRef.current, ticketId);
-    if (viewing) return;
-
-    if (event.type === "ticket_created" || event.type === "message_created") {
-      const ticketNumber = Number(event.data?.ticket_number ?? 0);
-      const title =
-        event.type === "ticket_created"
-          ? `Novo chamado #${String(ticketNumber).padStart(4, "0")}`
-          : `Nova mensagem no chamado #${String(ticketNumber).padStart(4, "0")}`;
-      const body =
-        event.type === "ticket_created"
-          ? "Um usuário abriu um novo chamado."
-          : "O cliente enviou uma nova mensagem.";
-
-      const alertId = `${event.type}-${ticketId}-${Date.now()}`;
-      setAlerts((prev) => [
-        { id: alertId, ticketId, ticketNumber, title, body },
-        ...prev,
-      ]);
-      toast.info(title, { description: body });
-    }
   };
 
   useEffect(() => {

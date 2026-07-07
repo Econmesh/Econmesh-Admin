@@ -12,7 +12,10 @@ import {
 } from "react";
 import { toast } from "sonner";
 
+import { usePathname } from "next/navigation";
+
 import { useAuth } from "@/hooks/use-auth";
+import { normalizeTicketId } from "@/modules/support/support-realtime";
 import { notificationsService } from "@/services/admin/support.service";
 import type { UserNotification } from "@/types/api";
 
@@ -32,6 +35,10 @@ function normalizeNotification(raw: UserNotification): UserNotification {
   };
 }
 
+function isViewingSupportTicket(pathname: string | null, ticketId: string) {
+  return pathname?.toLowerCase() === `/dashboard/suporte/${normalizeTicketId(ticketId)}`;
+}
+
 type NotificationContextValue = {
   unreadNotifications: UserNotification[];
   unreadCount: number;
@@ -45,6 +52,9 @@ const NotificationContext = createContext<NotificationContextValue | null>(null)
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading, user, getIdToken } = useAuth();
+  const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
   const [unreadNotifications, setUnreadNotifications] = useState<UserNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -58,11 +68,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         notificationsService.list({ page: 1, page_size: 50, unread_only: true }),
         notificationsService.unreadCount(),
       ]);
-      setUnreadNotifications(
-        list.items
-          .map(normalizeNotification)
-          .filter((n) => n.kind !== "support"),
-      );
+      setUnreadNotifications(list.items.map(normalizeNotification));
       setUnreadCount(count.count);
     } finally {
       setLoading(false);
@@ -106,7 +112,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             retryDelay = STREAM_RETRY_MS;
             if (event.type === "notification" && event.data) {
               const n = normalizeNotification(event.data);
-              if (n.kind === "support") continue;
+              const ticketId = n.metadata?.ticket_id;
+              if (
+                n.kind === "support" &&
+                ticketId &&
+                isViewingSupportTicket(pathnameRef.current, ticketId)
+              ) {
+                continue;
+              }
               setUnreadNotifications((prev) => {
                 if (prev.some((x) => x.id === n.id)) return prev;
                 setUnreadCount((c) => c + 1);

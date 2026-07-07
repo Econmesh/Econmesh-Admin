@@ -29,6 +29,7 @@ export function Logo({ className, width, height, size = "default" }: LogoProps) 
 				width={width ?? preset.width}
 				height={height ?? preset.height}
 				className={preset.className}
+				style={{ width: "auto" }}
 				priority
 			/>
 		</Link>
