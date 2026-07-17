@@ -103,11 +103,11 @@ export function NotificationCampaignForm({
 
   return (
     <AuthForm onSubmit={handleSubmit} loading={loading} submitLabel={submitLabel}>
-      <FormField label="Título" htmlFor="title" error={errors.title}>
+      <FormField label="Título" id="title" error={errors.title}>
         <FormInput id="title" name="title" required />
       </FormField>
 
-      <FormField label="Mensagem" htmlFor="body" error={errors.body}>
+      <FormField label="Mensagem" id="body" error={errors.body}>
         <textarea
           id="body"
           name="body"
@@ -206,7 +206,7 @@ export function NotificationCampaignForm({
           Enviar agora
         </label>
         {!sendNow ? (
-          <FormField label="Agendar para" htmlFor="send_at" error={errors.send_at}>
+          <FormField label="Agendar para" id="send_at" error={errors.send_at}>
             <FormInput id="send_at" name="send_at" type="datetime-local" required={!sendNow} />
           </FormField>
         ) : null}
