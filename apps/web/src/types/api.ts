@@ -449,6 +449,151 @@ export interface UnreadCountResponse {
   count: number;
 }
 
+export type AgreementStatus =
+  | "draft"
+  | "awaiting_send"
+  | "awaiting_signatures"
+  | "partially_signed"
+  | "signed"
+  | "rejected"
+  | "cancelled"
+  | "expired";
+
+export type SigningMode = "unordered" | "ordered";
+export type ParticipantKind = "company" | "external";
+export type ParticipantRole =
+  | "sign"
+  | "approve"
+  | "witness"
+  | "acknowledge"
+  | "receipt";
+export type ParticipantStatus = "pending" | "viewed" | "completed" | "rejected";
+export type AgreementFilter =
+  | "all"
+  | "signed"
+  | "pending"
+  | "mine"
+  | "organization"
+  | "company"
+  | "rejected"
+  | "expired";
+export type AgreementSort = "newest" | "oldest" | "updated" | "title";
+
+export interface AgreementParticipant {
+  id: string;
+  kind: ParticipantKind;
+  user_id?: string | null;
+  company_id?: string | null;
+  company_name?: string | null;
+  name: string;
+  email: string;
+  cpf?: string | null;
+  job_title?: string | null;
+  role: ParticipantRole;
+  order_index: number;
+  status: ParticipantStatus;
+  completed_at?: string | null;
+  rejected_at?: string | null;
+  rejection_reason?: string | null;
+}
+
+export interface AgreementFile {
+  storage_key: string;
+  url: string;
+  sha256: string;
+  filename: string;
+  page_count: number;
+  size_bytes?: number | null;
+}
+
+export interface AgreementField {
+  id: string;
+  participant_id: string;
+  field_type: string;
+  page: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  value?: string | null;
+}
+
+export interface AgreementListItem {
+  id: string;
+  title: string;
+  status: AgreementStatus;
+  company_id: string;
+  company_name: string;
+  owner_user_id: string;
+  signing_mode: SigningMode;
+  deadline?: string | null;
+  participants: AgreementParticipant[];
+  signed_count: number;
+  total_participants: number;
+  progress_percent: number;
+  verification_code: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Agreement extends AgreementListItem {
+  description?: string | null;
+  original_file?: AgreementFile | null;
+  signed_file?: AgreementFile | null;
+  audit_report_file?: AgreementFile | null;
+  certificate_file?: AgreementFile | null;
+  fields: AgreementField[];
+}
+
+export interface AgreementListResponse {
+  items: AgreementListItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  has_more: boolean;
+}
+
+export interface AgreementListParams {
+  q?: string;
+  filter?: AgreementFilter;
+  sort?: AgreementSort;
+  company_id?: string;
+  page?: number;
+  page_size?: number;
+}
+
+export interface TimelineEvent {
+  id: string;
+  agreement_id: string;
+  event_type: string;
+  actor_user_id?: string | null;
+  actor_name?: string | null;
+  actor_company_id?: string | null;
+  actor_company_name?: string | null;
+  ip?: string | null;
+  user_agent?: string | null;
+  metadata: Record<string, string>;
+  created_at: string;
+}
+
+export interface AgreementProgress {
+  total_participants: number;
+  completed: number;
+  pending: number;
+  rejected: number;
+  viewed: number;
+  progress_percent: number;
+  pending_participants: AgreementParticipant[];
+  rejected_participants: AgreementParticipant[];
+  viewed_participants: AgreementParticipant[];
+  completed_participants: AgreementParticipant[];
+}
+
+export interface DownloadUrlResponse {
+  url: string;
+  artifact: string;
+}
+
 export type SupportTicketStatus = "open" | "in_progress" | "closed";
 
 export type SupportMessageType = "user_message" | "admin_reply" | "internal_note";
