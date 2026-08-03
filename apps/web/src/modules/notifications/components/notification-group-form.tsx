@@ -12,7 +12,6 @@ import {
 } from "@/modules/auth/components/auth-form";
 import {
   notificationGroupCreateSchema,
-  notificationGroupUpdateSchema,
   type NotificationGroupCreateFormValues,
   type NotificationGroupUpdateFormValues,
 } from "@/modules/notifications/schemas";
@@ -57,9 +56,7 @@ export function NotificationGroupForm(props: CreateProps | EditProps) {
       user_ids: selectedUsers,
     };
 
-    const schema =
-      props.mode === "create" ? notificationGroupCreateSchema : notificationGroupUpdateSchema;
-    const parsed = schema.safeParse(values);
+    const parsed = notificationGroupCreateSchema.safeParse(values);
     if (!parsed.success) {
       const fieldErrors: Record<string, string> = {};
       for (const issue of parsed.error.issues) {
@@ -83,7 +80,7 @@ export function NotificationGroupForm(props: CreateProps | EditProps) {
 
   return (
     <AuthForm onSubmit={handleSubmit} loading={loading} submitLabel={props.submitLabel}>
-      <FormField label="Nome" htmlFor="name" error={errors.name}>
+      <FormField label="Nome" id="name" error={errors.name}>
         <FormInput
           id="name"
           name="name"
@@ -92,7 +89,7 @@ export function NotificationGroupForm(props: CreateProps | EditProps) {
         />
       </FormField>
 
-      <FormField label="Descrição" htmlFor="description" error={errors.description}>
+      <FormField label="Descrição" id="description" error={errors.description}>
         <textarea
           id="description"
           name="description"

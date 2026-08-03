@@ -8,19 +8,45 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { NotificationCampaignList } from "@/modules/notifications/components/notification-campaign-list";
-import { adminNotificationsService } from "@/services/admin/notifications.service";
+import type { CampaignTargetLookups } from "@/modules/notifications/utils";
+import {
+  adminNotificationGroupsService,
+  adminNotificationsService,
+} from "@/services/admin/notifications.service";
+import { adminUsersService } from "@/services/admin/users.service";
 import type { NotificationCampaign } from "@/types/api";
 import { ApiError } from "@/utils/errors";
 
+const EMPTY_LOOKUPS: CampaignTargetLookups = {
+  usersById: {},
+  groupsById: {},
+};
+
 export default function NotificacoesPage() {
   const [campaigns, setCampaigns] = useState<NotificationCampaign[]>([]);
+  const [lookups, setLookups] = useState<CampaignTargetLookups>(EMPTY_LOOKUPS);
   const [loading, setLoading] = useState(true);
 
   const loadCampaigns = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await adminNotificationsService.list({ page_size: 50 });
-      setCampaigns(data.items);
+      const [campaignsData, usersData, groupsData] = await Promise.all([
+        adminNotificationsService.list({ page_size: 50 }),
+        adminUsersService.list({ page_size: 200 }),
+        adminNotificationGroupsService.list({ page_size: 100 }),
+      ]);
+      setCampaigns(campaignsData.items);
+      setLookups({
+        usersById: Object.fromEntries(
+          usersData.items.map((user) => [
+            user.id,
+            user.name ?? user.email ?? user.id,
+          ]),
+        ),
+        groupsById: Object.fromEntries(
+          groupsData.items.map((group) => [group.id, group.name]),
+        ),
+      });
     } catch (error) {
       toast.error(
         error instanceof ApiError
@@ -68,7 +94,7 @@ export default function NotificacoesPage() {
           ))}
         </div>
       ) : (
-        <NotificationCampaignList campaigns={campaigns} />
+        <NotificationCampaignList campaigns={campaigns} lookups={lookups} />
       )}
     </div>
   );

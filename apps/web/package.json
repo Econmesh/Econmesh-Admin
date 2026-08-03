@@ -10,6 +10,12 @@
   "dependencies": {
     "@econmesh-admin/env": "*",
     "@econmesh-admin/ui": "*",
+    "@tiptap/extension-image": "^3.29.2",
+    "@tiptap/extension-link": "^3.29.2",
+    "@tiptap/extension-placeholder": "^3.29.2",
+    "@tiptap/pm": "^3.29.2",
+    "@tiptap/react": "^3.29.2",
+    "@tiptap/starter-kit": "^3.29.2",
     "babel-plugin-react-compiler": "^1.0.0",
     "dotenv": "^17.2.2",
     "firebase": "^12.14.0",

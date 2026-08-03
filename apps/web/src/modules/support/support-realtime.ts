@@ -49,7 +49,7 @@ type TicketStreamHandlerContext = {
   messagesRef: { current: SupportMessage[] };
   setMessages: (messages: SupportMessage[]) => void;
   fetchMessages: () => Promise<SupportMessage[]>;
-  fetchTicket?: () => Promise<void>;
+  fetchTicket?: () => Promise<unknown>;
 };
 
 /** Apply a realtime event to the thread, fetching from API when the payload is incomplete. */

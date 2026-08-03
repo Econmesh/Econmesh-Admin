@@ -434,7 +434,7 @@ export interface UserNotification {
   read_at: string | null;
   created_at: string;
   campaign_id?: string | null;
-  kind?: "general" | "support";
+  kind?: "general" | "support" | "agreement";
   metadata?: Record<string, string>;
 }
 
@@ -643,4 +643,109 @@ export interface SupportTicketListResponse {
 export interface SupportMessageListResponse {
   items: SupportMessage[];
   total: number;
+}
+
+// ---------------------------------------------------------------------------
+// Blog
+// ---------------------------------------------------------------------------
+
+export type BlogPostStatus = "draft" | "scheduled" | "published" | "disabled";
+
+export type BlogPostSort =
+  | "newest"
+  | "oldest"
+  | "publish_at_desc"
+  | "publish_at_asc"
+  | "created_at_desc"
+  | "created_at_asc";
+
+export interface BlogCoverImage {
+  storage_key: string;
+  public_url: string;
+}
+
+export interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  content: Record<string, unknown>;
+  excerpt: string | null;
+  author: string | null;
+  cover_image: BlogCoverImage | null;
+  tags: string[];
+  category: string | null;
+  status: BlogPostStatus;
+  publish_at: string | null;
+  published_at: string | null;
+  meta_title: string | null;
+  meta_description: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BlogPostListItem {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  author: string | null;
+  cover_image: BlogCoverImage | null;
+  tags: string[];
+  category: string | null;
+  status: BlogPostStatus;
+  publish_at: string | null;
+  published_at: string | null;
+  meta_title: string | null;
+  meta_description: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BlogPostListParams {
+  page?: number;
+  page_size?: number;
+  q?: string;
+  status?: BlogPostStatus;
+  sort?: BlogPostSort;
+}
+
+export interface BlogPostListResponse {
+  items: BlogPostListItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  has_more: boolean;
+}
+
+export interface BlogPostCreatePayload {
+  title: string;
+  content: Record<string, unknown>;
+  excerpt?: string | null;
+  author?: string | null;
+  cover_image?: BlogCoverImage | null;
+  tags?: string[];
+  category?: string | null;
+  slug?: string | null;
+  publish_at?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  status?: BlogPostStatus | null;
+}
+
+export interface BlogPostUpdatePayload {
+  title?: string;
+  content?: Record<string, unknown>;
+  excerpt?: string | null;
+  author?: string | null;
+  cover_image?: BlogCoverImage | null;
+  tags?: string[];
+  category?: string | null;
+  slug?: string | null;
+  publish_at?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  status?: BlogPostStatus | null;
+  clear_cover_image?: boolean;
+  clear_publish_at?: boolean;
 }
