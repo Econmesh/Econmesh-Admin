@@ -8,22 +8,52 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { CampaignChannels } from "@/modules/notifications/components/campaign-channels";
 import { CAMPAIGN_STATUS_LABELS } from "@/modules/notifications/schemas";
-import { adminNotificationsService } from "@/services/admin/notifications.service";
+import {
+  formatCampaignTarget,
+  type CampaignTargetLookups,
+} from "@/modules/notifications/utils";
+import {
+  adminNotificationGroupsService,
+  adminNotificationsService,
+} from "@/services/admin/notifications.service";
+import { adminUsersService } from "@/services/admin/users.service";
 import type { NotificationCampaign } from "@/types/api";
 import { ApiError } from "@/utils/errors";
+
+const EMPTY_LOOKUPS: CampaignTargetLookups = {
+  usersById: {},
+  groupsById: {},
+};
 
 export default function NotificacaoDetalhePage() {
   const params = useParams<{ id: string }>();
   const [campaign, setCampaign] = useState<NotificationCampaign | null>(null);
+  const [lookups, setLookups] = useState<CampaignTargetLookups>(EMPTY_LOOKUPS);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
   const loadCampaign = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await adminNotificationsService.get(params.id);
+      const [data, usersData, groupsData] = await Promise.all([
+        adminNotificationsService.get(params.id),
+        adminUsersService.list({ page_size: 200 }),
+        adminNotificationGroupsService.list({ page_size: 100 }),
+      ]);
       setCampaign(data);
+      setLookups({
+        usersById: Object.fromEntries(
+          usersData.items.map((user) => [
+            user.id,
+            user.name ?? user.email ?? user.id,
+          ]),
+        ),
+        groupsById: Object.fromEntries(
+          groupsData.items.map((group) => [group.id, group.name]),
+        ),
+      });
     } catch (error) {
       toast.error(
         error instanceof ApiError ? error.message : "Não foi possível carregar a notificação.",
@@ -90,14 +120,16 @@ export default function NotificacaoDetalhePage() {
 
       <div className="space-y-4 rounded-xl border border-border p-6">
         <p className="whitespace-pre-wrap text-sm">{campaign.body}</p>
-        <dl className="grid gap-3 text-sm sm:grid-cols-2">
+        <dl className="grid gap-10 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-xs text-muted-foreground">Destino</dt>
-            <dd className="capitalize">{campaign.target_type}</dd>
+            <dd className="break-words">{formatCampaignTarget(campaign, lookups)}</dd>
           </div>
           <div>
             <dt className="text-xs text-muted-foreground">Canais</dt>
-            <dd>{campaign.channels.join(", ")}</dd>
+            <dd>
+              <CampaignChannels channels={campaign.channels} />
+            </dd>
           </div>
           <div>
             <dt className="text-xs text-muted-foreground">Agendamento</dt>

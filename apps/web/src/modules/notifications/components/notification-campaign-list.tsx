@@ -13,11 +13,17 @@ import { Bell, Eye } from "lucide-react";
 import Link from "next/link";
 
 import { EmptyState } from "@/components/feedback/empty-state";
+import { CampaignChannels } from "@/modules/notifications/components/campaign-channels";
 import { CAMPAIGN_STATUS_LABELS } from "@/modules/notifications/schemas";
+import {
+  formatCampaignTarget,
+  type CampaignTargetLookups,
+} from "@/modules/notifications/utils";
 import type { NotificationCampaign } from "@/types/api";
 
 type NotificationCampaignListProps = {
   campaigns: NotificationCampaign[];
+  lookups: CampaignTargetLookups;
 };
 
 function statusVariant(
@@ -29,7 +35,10 @@ function statusVariant(
   return "secondary";
 }
 
-export function NotificationCampaignList({ campaigns }: NotificationCampaignListProps) {
+export function NotificationCampaignList({
+  campaigns,
+  lookups,
+}: NotificationCampaignListProps) {
   if (campaigns.length === 0) {
     return (
       <EmptyState
@@ -47,7 +56,10 @@ export function NotificationCampaignList({ campaigns }: NotificationCampaignList
 
   return (
     <div className="grid gap-4">
-      {campaigns.map((campaign) => (
+      {campaigns.map((campaign) => {
+        const targetLabel = formatCampaignTarget(campaign, lookups);
+
+        return (
         <Card key={campaign.id} className="rounded-xl">
           <CardHeader>
             <div className="flex flex-wrap items-start justify-between gap-2">
@@ -60,24 +72,28 @@ export function NotificationCampaignList({ campaigns }: NotificationCampaignList
               </Badge>
             </div>
           </CardHeader>
-          <CardContent className="flex flex-wrap items-center justify-between gap-3">
-            <dl className="grid gap-1 text-sm sm:grid-cols-3">
-              <div>
+          <CardContent className="flex flex-wrap items-center justify-between gap-4">
+            <dl className="grid min-w-0 w-full flex-1 grid-cols-3 gap-x-8 text-sm sm:max-w-2xl">
+              <div className="min-w-0">
                 <dt className="text-xs text-muted-foreground">Destino</dt>
-                <dd className="capitalize">{campaign.target_type}</dd>
+                <dd className="truncate" title={targetLabel}>
+                  {targetLabel}
+                </dd>
               </div>
-              <div>
+              <div className="min-w-0">
                 <dt className="text-xs text-muted-foreground">Canais</dt>
-                <dd>{campaign.channels.join(", ")}</dd>
+                <dd>
+                  <CampaignChannels channels={campaign.channels} />
+                </dd>
               </div>
-              <div>
+              <div className="min-w-0">
                 <dt className="text-xs text-muted-foreground">Entregues</dt>
                 <dd>
                   {campaign.stats.delivered}/{campaign.stats.total}
                 </dd>
               </div>
             </dl>
-            <Link href={`/dashboard/notificacoes/${campaign.id}`} className="inline-flex">
+            <Link href={`/dashboard/notificacoes/${campaign.id}`} className="inline-flex shrink-0">
               <Button size="sm" variant="outline">
                 <Eye className="size-4" aria-hidden />
                 Detalhes
@@ -85,7 +101,8 @@ export function NotificationCampaignList({ campaigns }: NotificationCampaignList
             </Link>
           </CardContent>
         </Card>
-      ))}
+        );
+      })}
     </div>
   );
 }

@@ -73,7 +73,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.id]);
 
   const markRead = useCallback(async (id: string) => {
     await notificationsService.markRead(id);
@@ -128,7 +128,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
               });
             }
           }
-        } catch {
+        } catch (streamError) {
+
           if (controller.signal.aborted) break;
         }
         if (controller.signal.aborted) break;
