@@ -31,6 +31,11 @@ export function NotificationItem({
 }: NotificationItemProps) {
   const isUnread = !notification.read_at;
   const href = interactive ? getNotificationHref(notification) : null;
+  const isExternalSupport =
+    notification.kind === "support" && notification.metadata?.source === "external";
+  const isContactRequest =
+    notification.kind === "support" &&
+    notification.metadata?.source === "contact_request";
 
   const className = `w-full text-left transition-colors ${
     compact ? "px-2 py-2" : "p-4"
@@ -44,6 +49,16 @@ export function NotificationItem({
       <div className="min-w-0 flex-1">
         <p className={`leading-tight ${isUnread ? "font-semibold" : "font-medium"}`}>
           {notification.title}
+          {isContactRequest ? (
+            <span className="ml-2 inline-flex rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-orange-800 dark:bg-orange-950 dark:text-orange-200">
+              Solicitação de contato
+            </span>
+          ) : null}
+          {isExternalSupport ? (
+            <span className="ml-2 inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
+              Site público
+            </span>
+          ) : null}
         </p>
         <p
           className={`mt-1 text-muted-foreground whitespace-pre-wrap ${

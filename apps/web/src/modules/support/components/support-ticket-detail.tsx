@@ -18,7 +18,10 @@ import { useSupport } from "@/contexts/support-context";
 import { SupportMessageThread } from "@/modules/support/components/support-message-thread";
 import { UserOnlineBadge } from "@/modules/support/components/user-online-badge";
 import { useTicketMessagesRealtime } from "@/modules/support/hooks/use-ticket-messages-realtime";
-import { SUPPORT_STATUS_LABELS } from "@/modules/support/schemas";
+import {
+  SUPPORT_STATUS_BADGE_VARIANT,
+  SUPPORT_STATUS_LABELS,
+} from "@/modules/support/schemas";
 import { messagesFingerprint } from "@/modules/support/support-realtime";
 import {
   adminSupportService,
@@ -182,6 +185,9 @@ export function SupportTicketDetailView({ ticketId }: Props) {
 
   const isClosed = ticket.status === "closed";
   const isNoteMode = composerMode === "note";
+  const isExternal = ticket.source === "external";
+  const isContactRequest = ticket.source === "contact_request";
+  const isPublicVisitor = isExternal || isContactRequest;
 
   return (
     <div className="space-y-4">
@@ -195,16 +201,37 @@ export function SupportTicketDetailView({ ticketId }: Props) {
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">
-            {formatTicketNumber(ticket.ticket_number)} — {ticket.subject}
-          </h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-semibold">
+              {formatTicketNumber(ticket.ticket_number)} — {ticket.subject}
+            </h1>
+            {isContactRequest && (
+              <Badge className="border-transparent bg-orange-500/15 text-orange-700 dark:text-orange-400">
+                Solicitação de Contato
+              </Badge>
+            )}
+            {isExternal && (
+              <Badge variant="outline">Site público</Badge>
+            )}
+          </div>
           <p className="mt-1 text-sm text-muted-foreground">
             {ticket.user_name ?? "Usuário"} · {ticket.user_email}
           </p>
+          {isContactRequest && (
+            <div className="mt-2 space-y-0.5 text-sm text-muted-foreground">
+              {ticket.company ? <p>Empresa: {ticket.company}</p> : null}
+              {ticket.position ? <p>Cargo: {ticket.position}</p> : null}
+              {ticket.phone ? <p>Telefone: {ticket.phone}</p> : null}
+              {ticket.address ? <p>Endereço: {ticket.address}</p> : null}
+            </div>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <UserOnlineBadge online={ticket.user_online ?? false} />
-          <Badge variant={isClosed ? "secondary" : "default"}>
+          {!isPublicVisitor && <UserOnlineBadge online={ticket.user_online ?? false} />}
+          <Badge
+            variant={SUPPORT_STATUS_BADGE_VARIANT[ticket.status] ?? "warning"}
+            className={ticket.status === "open" ? "animate-pulse" : undefined}
+          >
             {SUPPORT_STATUS_LABELS[ticket.status] ?? ticket.status}
           </Badge>
           {isClosed ? (

@@ -8,21 +8,29 @@ import { toast } from "sonner";
 import { useSupport } from "@/contexts/support-context";
 import { SupportTicketList } from "@/modules/support/components/support-ticket-list";
 import { adminSupportService } from "@/services/admin/support.service";
-import type { SupportTicket, SupportTicketStatus } from "@/types/api";
+import type { SupportTicket, SupportTicketSource, SupportTicketStatus } from "@/types/api";
 import { ApiError } from "@/utils/errors";
 
-const FILTERS: { label: string; value: SupportTicketStatus | "all" }[] = [
+const STATUS_FILTERS: { label: string; value: SupportTicketStatus | "all" }[] = [
   { label: "Todos", value: "all" },
   { label: "Abertos", value: "open" },
   { label: "Em atendimento", value: "in_progress" },
   { label: "Encerrados", value: "closed" },
 ];
 
+const SOURCE_FILTERS: { label: string; value: SupportTicketSource | "all" }[] = [
+  { label: "Todas as origens", value: "all" },
+  { label: "Suporte Interno", value: "internal" },
+  { label: "Suporte Externo", value: "external" },
+  { label: "Solicitação de Contato", value: "contact_request" },
+];
+
 export default function SuportePage() {
   const { subscribeGlobal, refreshSignal } = useSupport();
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<SupportTicketStatus | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<SupportTicketStatus | "all">("all");
+  const [sourceFilter, setSourceFilter] = useState<SupportTicketSource | "all">("all");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -30,7 +38,8 @@ export default function SuportePage() {
       const data = await adminSupportService.list({
         page: 1,
         page_size: 100,
-        status: filter === "all" ? undefined : filter,
+        status: statusFilter === "all" ? undefined : statusFilter,
+        source: sourceFilter === "all" ? undefined : sourceFilter,
       });
       setTickets(data.items);
     } catch (error) {
@@ -40,7 +49,7 @@ export default function SuportePage() {
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, [sourceFilter, statusFilter]);
 
   useEffect(() => {
     void load();
@@ -57,17 +66,30 @@ export default function SuportePage() {
       <div>
         <h1 className="text-2xl font-semibold">Suporte</h1>
         <p className="text-sm text-muted-foreground">
-          Gerencie chamados abertos e encerrados dos usuários.
+          Gerencie chamados da plataforma e do site público.
         </p>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {FILTERS.map((f) => (
+        {STATUS_FILTERS.map((f) => (
           <Button
             key={f.value}
-            variant={filter === f.value ? "default" : "outline"}
+            variant={statusFilter === f.value ? "default" : "outline"}
             size="sm"
-            onClick={() => setFilter(f.value)}
+            onClick={() => setStatusFilter(f.value)}
+          >
+            {f.label}
+          </Button>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {SOURCE_FILTERS.map((f) => (
+          <Button
+            key={f.value}
+            variant={sourceFilter === f.value ? "default" : "outline"}
+            size="sm"
+            onClick={() => setSourceFilter(f.value)}
           >
             {f.label}
           </Button>

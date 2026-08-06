@@ -48,18 +48,12 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   const url = buildUrl(path);
 
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      ...rest,
-      headers: requestHeaders,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-      signal: AbortSignal.timeout(20_000),
-    });
-  } catch (fetchErr) {
-
-    throw fetchErr;
-  }
+  const response = await fetch(url, {
+    ...rest,
+    headers: requestHeaders,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+    signal: AbortSignal.timeout(20_000),
+  });
 
 
 

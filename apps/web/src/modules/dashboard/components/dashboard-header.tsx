@@ -17,6 +17,7 @@ import { useState } from "react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { NotificationBell } from "@/modules/notifications/components/notification-bell";
+import { SupportBell } from "@/modules/support/components/support-bell";
 
 function UserAvatar({
   name,
@@ -60,6 +61,7 @@ export function DashboardHeader() {
     <header className="relative z-50 flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/50 px-4 backdrop-blur-sm md:px-6">
       <div className="text-sm font-semibold md:hidden">Econmesh</div>
       <div className="flex-1" />
+      <SupportBell />
       <NotificationBell />
       <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
         <DropdownMenuTrigger

@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { usePathname } from "next/navigation";
 
 import { useAuth } from "@/hooks/use-auth";
 import { ticketIdFromEvent, normalizeTicketId } from "@/modules/support/support-realtime";
@@ -22,6 +23,14 @@ const STREAM_RETRY_MS = 3_000;
 
 function sleep(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
+
+function isViewingSupportTicket(pathname: string | null, ticketId: string) {
+  return pathname?.toLowerCase() === `/dashboard/suporte/${normalizeTicketId(ticketId)}`;
+}
+
+function formatTicketLabel(ticketNumber: number) {
+  return `#${String(ticketNumber).padStart(4, "0")}`;
 }
 
 export type SupportAlert = {
@@ -51,6 +60,9 @@ const SupportContext = createContext<SupportContextValue | null>(null);
 
 export function SupportProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading, user, getIdToken } = useAuth();
+  const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
 
   const [alerts, setAlerts] = useState<SupportAlert[]>([]);
   const [refreshSignal, setRefreshSignal] = useState(0);
@@ -113,6 +125,35 @@ export function SupportProvider({ children }: { children: ReactNode }) {
     }
 
     if (event.type === "ping") return;
+
+    if (
+      event.type === "ticket_created" &&
+      (event.data?.source === "external" || event.data?.source === "contact_request")
+    ) {
+      const ticketNumber = Number(event.data.ticket_number ?? 0);
+      const label = formatTicketLabel(ticketNumber);
+      const isContactRequest = event.data?.source === "contact_request";
+      const title = isContactRequest
+        ? `Nova solicitação de contato ${label}`
+        : `Novo contato do site público ${label}`;
+      const message = event.data.message as { body?: string; author_name?: string } | undefined;
+      const visitorEmail = message?.author_name ?? "Visitante";
+      const preview = message?.body ?? "";
+      const body = `${visitorEmail}: ${preview.slice(0, 120)}`;
+
+      if (ticketId && !isViewingSupportTicket(pathnameRef.current, ticketId)) {
+        setAlerts((prev) => [
+          {
+            id: `${isContactRequest ? "contact" : "external"}-${ticketId}-${Date.now()}`,
+            ticketId,
+            ticketNumber,
+            title,
+            body,
+          },
+          ...prev,
+        ]);
+      }
+    }
 
     notifyGlobal();
   };

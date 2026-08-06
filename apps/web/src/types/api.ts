@@ -434,7 +434,7 @@ export interface UserNotification {
   read_at: string | null;
   created_at: string;
   campaign_id?: string | null;
-  kind?: "general" | "support" | "agreement";
+  kind?: "general" | "support" | "agreement" | "conversation";
   metadata?: Record<string, string>;
 }
 
@@ -451,11 +451,23 @@ export interface UnreadCountResponse {
 
 export type SupportTicketStatus = "open" | "in_progress" | "closed";
 
+export type SupportTicketSource = "internal" | "external" | "contact_request";
+
+export type SupportContactInterest = "dmc" | "mri";
+
 export type SupportMessageType = "user_message" | "admin_reply" | "internal_note";
 
 export interface SupportTicket {
   id: string;
-  user_id: string;
+  source?: SupportTicketSource;
+  user_id?: string | null;
+  visitor_email?: string | null;
+  visitor_name?: string | null;
+  company?: string | null;
+  position?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  interest?: SupportContactInterest | null;
   ticket_number: number;
   subject: string;
   status: SupportTicketStatus;
@@ -480,7 +492,7 @@ export interface SupportMessage {
   id: string;
   ticket_id: string;
   author_id: string;
-  author_role: "user" | "admin";
+  author_role: "user" | "admin" | "visitor";
   author_name?: string | null;
   message_type: SupportMessageType;
   body: string;
