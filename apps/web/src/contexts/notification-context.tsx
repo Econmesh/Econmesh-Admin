@@ -62,6 +62,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     if (!isAuthenticated) return;
+    const token = await getIdToken();
+    if (!token) return;
     setLoading(true);
     try {
       const [list, count] = await Promise.all([
@@ -70,10 +72,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       ]);
       setUnreadNotifications(list.items.map(normalizeNotification));
       setUnreadCount(count.count);
+    } catch {
+      // Do not crash the dashboard; auth codes already trigger session redirect.
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, user?.id]);
+  }, [getIdToken, isAuthenticated]);
 
   const markRead = useCallback(async (id: string) => {
     await notificationsService.markRead(id);
@@ -123,7 +127,18 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
               setUnreadNotifications((prev) => {
                 if (prev.some((x) => x.id === n.id)) return prev;
                 setUnreadCount((c) => c + 1);
-                toast.info(n.title, { description: n.body });
+                const isPublicSiteSupport =
+                  n.kind === "support" &&
+                  (n.metadata?.source === "external" ||
+                    n.metadata?.source === "contact_request");
+                if (isPublicSiteSupport) {
+                  toast.info(n.title, {
+                    description: n.body,
+                    duration: 8000,
+                  });
+                } else {
+                  toast.info(n.title, { description: n.body });
+                }
                 return [n, ...prev];
               });
             }

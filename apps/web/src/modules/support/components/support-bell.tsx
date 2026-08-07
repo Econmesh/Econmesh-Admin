@@ -35,7 +35,14 @@ export function SupportBell() {
       />
       <DropdownMenuContent align="end" sideOffset={8} className="w-80">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>Chamados de suporte</DropdownMenuLabel>
+          <DropdownMenuLabel className="flex items-center justify-between">
+            <span>Chamados de suporte</span>
+            {unreadCount > 0 ? (
+              <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                {unreadCount} {unreadCount === 1 ? "novo" : "novos"}
+              </span>
+            ) : null}
+          </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         {alerts.length === 0 ? (

@@ -7,6 +7,7 @@ import type {
   SupportMessageListResponse,
   SupportTicketDetail,
   SupportTicketListResponse,
+  SupportTicketSource,
   SupportTicketStatus,
   UserNotification,
   UserNotificationListResponse,
@@ -114,6 +115,7 @@ export const adminSupportService = {
     page?: number;
     page_size?: number;
     status?: SupportTicketStatus;
+    source?: SupportTicketSource;
     q?: string;
   } = {}) {
     return api.get<SupportTicketListResponse>(
