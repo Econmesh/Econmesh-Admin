@@ -542,6 +542,8 @@ export interface Agreement extends AgreementListItem {
   signed_file?: AgreementFile | null;
   audit_report_file?: AgreementFile | null;
   certificate_file?: AgreementFile | null;
+  chat_audit_report_file?: AgreementFile | null;
+  opportunity_audit_report_file?: AgreementFile | null;
   fields: AgreementField[];
 }
 
@@ -817,4 +819,161 @@ export interface BlogPostUpdatePayload {
   status?: BlogPostStatus | null;
   clear_cover_image?: boolean;
   clear_publish_at?: boolean;
+}
+
+export type ContractType = "servico" | "fornecimento" | "parceria" | "outro";
+
+export type SectionAppliesTo =
+  | ContractType
+  | "oportunidades"
+  | "todos";
+
+export interface ContractSection {
+  id: string;
+  title: string;
+  content_html: string;
+  contract_type: SectionAppliesTo;
+  sort_order: number;
+  created_by: string;
+  is_active: boolean;
+  is_company_editable: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContractSectionListResponse {
+  items: ContractSection[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface ContractSectionCreatePayload {
+  title: string;
+  content_html: string;
+  contract_type: SectionAppliesTo;
+  sort_order: number;
+  is_active?: boolean;
+  is_company_editable?: boolean;
+}
+
+export interface ContractSectionUpdatePayload {
+  title?: string;
+  content_html?: string;
+  contract_type?: SectionAppliesTo;
+  sort_order?: number;
+  is_active?: boolean;
+  is_company_editable?: boolean;
+}
+
+export interface SystemSectionInfo {
+  key: string;
+  title: string;
+  description: string;
+  sort_order: number;
+  is_system?: boolean;
+  can_edit?: boolean;
+  can_delete?: boolean;
+  can_reorder?: boolean;
+}
+
+export interface MinutaStructureResponse {
+  system_sections: SystemSectionInfo[];
+  admin_sections: ContractSection[];
+}
+
+export type ContractProposalStatus =
+  | "draft"
+  | "pending_approval"
+  | "changes_requested"
+  | "approved"
+  | "rejected"
+  | "sent_to_agreements";
+
+export interface ContractProposalListItem {
+  id: string;
+  conversation_id: string;
+  opportunity_id: string;
+  title: string;
+  status: ContractProposalStatus;
+  contract_type: ContractType;
+  agreement_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContractProposalListResponse {
+  items: ContractProposalListItem[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface PartySnapshot {
+  company_id: string;
+  legal_name: string;
+  trade_name: string | null;
+  tax_id: string;
+  address_line: string | null;
+  city: string | null;
+  state: string | null;
+  email: string | null;
+  phone: string | null;
+  legal_representative: string | null;
+}
+
+export interface OpportunitySnapshot {
+  opportunity_id: string;
+  title: string;
+  description: string;
+  category: string;
+  price: number | null;
+  price_negotiable: boolean;
+  periodicity: string | null;
+  prazo: string | null;
+}
+
+export interface ProposalSection {
+  id: string;
+  title: string;
+  content_html: string;
+  sort_order: number;
+  is_core: boolean;
+  is_admin_managed?: boolean;
+  is_editable?: boolean;
+  template_id?: string | null;
+}
+
+export interface ProposalPdfFile {
+  storage_key: string;
+  url: string;
+  sha256: string;
+  filename: string;
+  page_count: number;
+  size_bytes: number | null;
+}
+
+export interface ContractProposal {
+  id: string;
+  conversation_id: string;
+  opportunity_id: string;
+  offerer_company_id: string;
+  interested_company_id: string;
+  offerer_user_id: string;
+  interested_user_id: string;
+  created_by_user_id: string;
+  title: string;
+  contract_type: ContractType;
+  status: ContractProposalStatus;
+  contractor: PartySnapshot;
+  contracted: PartySnapshot;
+  opportunity: OpportunitySnapshot;
+  sections: ProposalSection[];
+  pdf_file: ProposalPdfFile | null;
+  agreement_id: string | null;
+  change_request_message: string | null;
+  rejection_reason: string | null;
+  my_role: "offerer" | "interested" | null;
+  created_at: string;
+  updated_at: string;
 }

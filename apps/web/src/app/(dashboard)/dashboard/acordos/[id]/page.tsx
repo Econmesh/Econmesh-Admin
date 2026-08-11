@@ -41,10 +41,91 @@ export default function AdminAcordoDetailPage() {
 	}, [params.id]);
 
 	async function download(artifact: string) {
+		// #region agent log
+		fetch("http://127.0.0.1:7321/ingest/0dffd4af-9c1a-46eb-ae81-2c1a98eb0dd9", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				"X-Debug-Session-Id": "c6c0dd",
+			},
+			body: JSON.stringify({
+				sessionId: "c6c0dd",
+				runId: "post-fix",
+				hypothesisId: "A",
+				location: "admin/acordos/[id]/page.tsx:download",
+				message: "admin download clicked",
+				data: {
+					agreementId: params.id,
+					artifact,
+					status: agreement?.status ?? null,
+					hasChatAudit: Boolean(agreement?.chat_audit_report_file),
+					hasOpportunityAudit: Boolean(agreement?.opportunity_audit_report_file),
+					hasChatAuditUrl: Boolean(agreement?.chat_audit_report_file?.url),
+					hasOpportunityAuditUrl: Boolean(
+						agreement?.opportunity_audit_report_file?.url,
+					),
+				},
+				timestamp: Date.now(),
+			}),
+		}).catch(() => {});
+		// #endregion
 		try {
 			const res = await adminAgreementsService.download(params.id, artifact);
+			// #region agent log
+			let urlHost: string | null = null;
+			try {
+				urlHost = res.url ? new URL(res.url).host : null;
+			} catch {
+				urlHost = "invalid";
+			}
+			fetch("http://127.0.0.1:7321/ingest/0dffd4af-9c1a-46eb-ae81-2c1a98eb0dd9", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"X-Debug-Session-Id": "c6c0dd",
+				},
+				body: JSON.stringify({
+					sessionId: "c6c0dd",
+					runId: "post-fix",
+					hypothesisId: "C",
+					location: "admin/acordos/[id]/page.tsx:download-ok",
+					message: "admin download url received",
+					data: {
+						artifact,
+						hasUrl: Boolean(res?.url),
+						urlHost,
+						urlPrefix: res?.url ? res.url.slice(0, 80) : null,
+					},
+					timestamp: Date.now(),
+				}),
+			}).catch(() => {});
+			// #endregion
 			window.open(res.url, "_blank", "noopener,noreferrer");
 		} catch (err) {
+			// #region agent log
+			fetch("http://127.0.0.1:7321/ingest/0dffd4af-9c1a-46eb-ae81-2c1a98eb0dd9", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"X-Debug-Session-Id": "c6c0dd",
+				},
+				body: JSON.stringify({
+					sessionId: "c6c0dd",
+					runId: "post-fix",
+					hypothesisId: "A",
+					location: "admin/acordos/[id]/page.tsx:download-err",
+					message: "admin download failed",
+					data: {
+						artifact,
+						errorMessage: err instanceof ApiError ? err.message : String(err),
+						errorStatus: err instanceof ApiError ? err.status : null,
+						errorCode: err instanceof ApiError ? err.code : null,
+						errorDetails: err instanceof ApiError ? err.details : null,
+					},
+					timestamp: Date.now(),
+				}),
+			}).catch(() => {});
+			// #endregion
 			toast.error(
 				err instanceof ApiError ? err.message : "Download indisponível.",
 			);
@@ -101,10 +182,20 @@ export default function AdminAcordoDetailPage() {
 						{(
 							[
 								["signed", "PDF final"],
-								["audit", "Auditoria"],
+								["audit", "Auditoria do acordo"],
 								["certificate", "Certificado"],
 								["original", "Original"],
-							] as const
+								...(progress?.progress_percent === 100 ||
+								agreement.status === "signed"
+									? [
+											["chat_audit", "Auditoria do chat"],
+											[
+												"opportunity_audit",
+												"Auditoria da oportunidade",
+											],
+										]
+									: []),
+							] as Array<[string, string]>
 						).map(([artifact, label]) => (
 							<Button
 								key={artifact}

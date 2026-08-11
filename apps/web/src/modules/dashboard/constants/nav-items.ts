@@ -1,11 +1,13 @@
 import {
   Bell,
   Building2,
+  FileStack,
   FileText,
   Handshake,
   Headphones,
   LayoutDashboard,
   MessageCircle,
+  ScrollText,
   Target,
   Users,
   type LucideIcon,
@@ -45,7 +47,19 @@ export const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     shortLabel: "Conversas",
     icon: MessageCircle,
   },
+  {
+    href: "/dashboard/minutas",
+    label: "Minutas",
+    shortLabel: "Minutas",
+    icon: ScrollText,
+  },
   { href: "/dashboard/acordos", label: "Acordos", shortLabel: "Acordos", icon: Handshake },
+  {
+    href: "/dashboard/contract-sections",
+    label: "Seções contratuais",
+    shortLabel: "Seções",
+    icon: FileStack,
+  },
   { href: "/dashboard/suporte", label: "Suporte", shortLabel: "Suporte", icon: Headphones },
   { href: "/dashboard/blog", label: "Blog", shortLabel: "Blog", icon: FileText },
   {
