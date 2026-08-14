@@ -66,6 +66,7 @@ export default function EmpresaDetalhePage() {
       <CompanyDetailView
         company={company}
         onDeleted={() => router.push("/dashboard/empresas")}
+        onUpdated={setCompany}
       />
     </div>
   );

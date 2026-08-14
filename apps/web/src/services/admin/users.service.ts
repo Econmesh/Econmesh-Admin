@@ -6,6 +6,7 @@ import type {
   AdminUserUpdatePayload,
   MeUser,
   RegisterResponse,
+  UserProfile,
 } from "@/types/api";
 import { api } from "@/services/api/client";
 
@@ -38,5 +39,13 @@ export const adminUsersService = {
 
   update(id: string, body: AdminUserUpdatePayload) {
     return api.patch<MeUser>(`/admin/users/${id}`, body, { auth: true });
+  },
+
+  getProfile(id: string) {
+    return api.get<UserProfile>(`/admin/users/${id}/profile`, { auth: true });
+  },
+
+  delete(id: string) {
+    return api.delete<{ message: string }>(`/admin/users/${id}`, { auth: true });
   },
 };

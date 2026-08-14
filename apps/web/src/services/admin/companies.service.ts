@@ -42,6 +42,39 @@ export const adminCompaniesService = {
     return api.delete<{ message: string }>(`/admin/companies/${id}`, { auth: true });
   },
 
+  uploadDocument(
+    companyId: string,
+    kind: "operating_license" | "mtr",
+    file: File,
+    options: { approve?: boolean } = {},
+  ) {
+    const formData = new FormData();
+    formData.append("file", file);
+    const approve = options.approve ?? true;
+    const qs = approve ? "" : "?approve=false";
+    return api.upload<Company>(
+      `/admin/companies/${companyId}/documents/${kind}/upload${qs}`,
+      formData,
+      { auth: true },
+    );
+  },
+
+  approveDocument(companyId: string, kind: "operating_license" | "mtr") {
+    return api.post<Company>(
+      `/admin/companies/${companyId}/documents/${kind}/approve`,
+      {},
+      { auth: true },
+    );
+  },
+
+  rejectDocument(companyId: string, kind: "operating_license" | "mtr", reason: string) {
+    return api.post<Company>(
+      `/admin/companies/${companyId}/documents/${kind}/reject`,
+      { reason },
+      { auth: true },
+    );
+  },
+
   presignLogo(body: { filename: string; content_type: string }) {
     return api.post<LogoPresignResponse>("/companies/logo/presign", body, { auth: true });
   },

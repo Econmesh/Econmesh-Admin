@@ -30,6 +30,7 @@ export function SupportTicketList({ tickets }: Props) {
         const isOpen = ticket.status === "open";
         const isExternal = ticket.source === "external";
         const isContactRequest = ticket.source === "contact_request";
+        const isDocumentReview = ticket.source === "document_review";
         const statusVariant =
           SUPPORT_STATUS_BADGE_VARIANT[ticket.status] ?? "warning";
 
@@ -39,7 +40,9 @@ export function SupportTicketList({ tickets }: Props) {
             href={`/dashboard/suporte/${ticket.id}`}
             className={cn(
               "block rounded-xl border p-4 transition-colors",
-              isContactRequest
+              isDocumentReview
+                ? "border-violet-200 bg-violet-50 hover:bg-violet-100/80 dark:border-violet-800 dark:bg-violet-950/40 dark:hover:bg-violet-950/60"
+                : isContactRequest
                 ? "border-orange-200 bg-orange-50 hover:bg-orange-100/80 dark:border-orange-800 dark:bg-orange-950/40 dark:hover:bg-orange-950/60"
                 : isExternal
                   ? "border-sky-200 bg-sky-50 hover:bg-sky-100/80 dark:border-sky-800 dark:bg-sky-950/40 dark:hover:bg-sky-950/60"
@@ -54,6 +57,11 @@ export function SupportTicketList({ tickets }: Props) {
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-medium">{ticket.subject}</p>
+                  {isDocumentReview && (
+                    <Badge className="border-transparent bg-violet-500/15 text-xs text-violet-700 dark:text-violet-400">
+                      Documentos
+                    </Badge>
+                  )}
                   {isContactRequest && (
                     <Badge className="border-transparent bg-orange-500/15 text-xs text-orange-700 dark:text-orange-400">
                       Solicitação de Contato

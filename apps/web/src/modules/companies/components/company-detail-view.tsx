@@ -12,14 +12,26 @@ import { Building2, Pencil, Trash2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import { DeleteCompanyDialog } from "@/modules/companies/components/delete-company-dialog";
-import { formatCep, formatCnpj, formatPhone } from "@/modules/companies/schemas";
-import type { Company } from "@/types/api";
+import { DocumentStatusBadge } from "@/modules/companies/components/document-status-badge";
+import {
+  COMPLIANCE_ACCEPT,
+  MAX_COMPLIANCE_BYTES,
+  formatCep,
+  formatCnpj,
+  formatPhone,
+  isAllowedComplianceFile,
+} from "@/modules/companies/schemas";
+import { adminCompaniesService } from "@/services/admin/companies.service";
+import type { Company, CompanyComplianceFile } from "@/types/api";
+import { ApiError } from "@/utils/errors";
 
 type CompanyDetailViewProps = {
   company: Company;
   onDeleted: () => void;
+  onUpdated?: (company: Company) => void;
 };
 
 function DetailItem({ label, value }: { label: string; value?: string | null }) {
@@ -32,7 +44,104 @@ function DetailItem({ label, value }: { label: string; value?: string | null }) 
   );
 }
 
-export function CompanyDetailView({ company, onDeleted }: CompanyDetailViewProps) {
+function DocumentItem({
+  companyId,
+  kind,
+  label,
+  file,
+  onUpdated,
+}: {
+  companyId: string;
+  kind: "operating_license" | "mtr";
+  label: string;
+  file?: CompanyComplianceFile | null;
+  onUpdated?: (company: Company) => void;
+}) {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function attach() {
+    if (!selectedFile) {
+      toast.error("Selecione um arquivo para anexar.");
+      return;
+    }
+    if (!isAllowedComplianceFile(selectedFile)) {
+      toast.error("Use PDF, JPEG ou PNG.");
+      return;
+    }
+    if (selectedFile.size > MAX_COMPLIANCE_BYTES) {
+      toast.error("Arquivo deve ter no máximo 10 MB.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const updated = await adminCompaniesService.uploadDocument(
+        companyId,
+        kind,
+        selectedFile,
+        { approve: false },
+      );
+      toast.success(`${label} anexado e marcado como pendente.`);
+      setSelectedFile(null);
+      onUpdated?.(updated);
+    } catch (error) {
+      toast.error(
+        error instanceof ApiError ? error.message : "Não foi possível anexar o documento.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div>
+      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
+      <dd className="mt-1 space-y-2 text-sm">
+        {file ? (
+          <>
+            <div className="flex flex-wrap items-center gap-2">
+              <a
+                href={file.public_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                {file.filename}
+              </a>
+              <DocumentStatusBadge file={file} />
+            </div>
+            {file.status === "rejected" && file.rejection_reason ? (
+              <p className="text-xs text-destructive">Motivo: {file.rejection_reason}</p>
+            ) : null}
+          </>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-muted-foreground">Não enviado</span>
+              <DocumentStatusBadge status="pending" />
+            </div>
+            <input
+              type="file"
+              accept={COMPLIANCE_ACCEPT}
+              className="block w-full text-sm file:mr-3 file:rounded-md file:border file:border-input file:bg-background file:px-3 file:py-1.5"
+              onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+            />
+            <Button
+              type="button"
+              size="sm"
+              disabled={busy || !selectedFile}
+              onClick={() => void attach()}
+            >
+              {busy ? "Anexando..." : "Anexar"}
+            </Button>
+          </div>
+        )}
+      </dd>
+    </div>
+  );
+}
+
+export function CompanyDetailView({ company, onDeleted, onUpdated }: CompanyDetailViewProps) {
   const [showDelete, setShowDelete] = useState(false);
   const address = company.address;
 
@@ -112,6 +221,31 @@ export function CompanyDetailView({ company, onDeleted }: CompanyDetailViewProps
                 <DetailItem label="Bairro" value={address?.neighborhood} />
                 <DetailItem label="Cidade" value={address?.city} />
                 <DetailItem label="Estado" value={address?.state} />
+              </dl>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-xl lg:col-span-2">
+            <CardHeader>
+              <CardTitle>Documentos</CardTitle>
+              <CardDescription>Licença de operação e comprovante MTR.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <dl className="grid gap-4 sm:grid-cols-2">
+                <DocumentItem
+                  companyId={company.id}
+                  kind="operating_license"
+                  label="Licença de operação"
+                  file={company.operating_license}
+                  onUpdated={onUpdated}
+                />
+                <DocumentItem
+                  companyId={company.id}
+                  kind="mtr"
+                  label="MTR"
+                  file={company.mtr_document}
+                  onUpdated={onUpdated}
+                />
               </dl>
             </CardContent>
           </Card>
