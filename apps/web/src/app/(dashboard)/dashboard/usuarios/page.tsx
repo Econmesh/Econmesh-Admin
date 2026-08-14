@@ -60,7 +60,7 @@ export default function UsuariosPage() {
           ))}
         </div>
       ) : (
-        <UserList users={users} />
+        <UserList users={users} onDeleted={loadUsers} />
       )}
     </div>
   );

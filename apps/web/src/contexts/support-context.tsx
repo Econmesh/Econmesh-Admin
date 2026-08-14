@@ -128,23 +128,31 @@ export function SupportProvider({ children }: { children: ReactNode }) {
 
     if (
       event.type === "ticket_created" &&
-      (event.data?.source === "external" || event.data?.source === "contact_request")
+      (event.data?.source === "external" ||
+        event.data?.source === "contact_request" ||
+        event.data?.source === "document_review")
     ) {
       const ticketNumber = Number(event.data.ticket_number ?? 0);
       const label = formatTicketLabel(ticketNumber);
-      const isContactRequest = event.data?.source === "contact_request";
-      const title = isContactRequest
-        ? `Nova solicitação de contato ${label}`
-        : `Novo contato do site público ${label}`;
+      const source = String(event.data.source);
+      const isContactRequest = source === "contact_request";
+      const isDocumentReview = source === "document_review";
+      const title = isDocumentReview
+        ? `Documentos para análise ${label}`
+        : isContactRequest
+          ? `Nova solicitação de contato ${label}`
+          : `Novo contato do site público ${label}`;
       const message = event.data.message as { body?: string; author_name?: string } | undefined;
       const visitorEmail = message?.author_name ?? "Visitante";
       const preview = message?.body ?? "";
-      const body = `${visitorEmail}: ${preview.slice(0, 120)}`;
+      const body = isDocumentReview
+        ? (preview.slice(0, 120) || visitorEmail)
+        : `${visitorEmail}: ${preview.slice(0, 120)}`;
 
       if (ticketId && !isViewingSupportTicket(pathnameRef.current, ticketId)) {
         setAlerts((prev) => [
           {
-            id: `${isContactRequest ? "contact" : "external"}-${ticketId}-${Date.now()}`,
+            id: `${source}-${ticketId}-${Date.now()}`,
             ticketId,
             ticketNumber,
             title,
