@@ -56,6 +56,19 @@ export interface CompanyAddress {
   state?: string | null;
 }
 
+export type ComplianceDocumentStatus = "pending" | "approved" | "rejected";
+
+export interface CompanyComplianceFile {
+  storage_key: string;
+  public_url: string;
+  filename: string;
+  content_type: string;
+  status?: ComplianceDocumentStatus;
+  rejection_reason?: string | null;
+  reviewed_at?: string | null;
+  reviewed_by?: string | null;
+}
+
 export interface Company {
   id: string;
   owner_user_id: string;
@@ -64,6 +77,7 @@ export interface Company {
   tax_id: string;
   email?: string | null;
   phone?: string | null;
+  legal_representative?: string | null;
   address?: CompanyAddress | null;
   country: string;
   website?: string | null;
@@ -71,6 +85,8 @@ export interface Company {
   logo_storage_key?: string | null;
   logo_url?: string | null;
   sector?: string | null;
+  operating_license?: CompanyComplianceFile | null;
+  mtr_document?: CompanyComplianceFile | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -434,7 +450,7 @@ export interface UserNotification {
   read_at: string | null;
   created_at: string;
   campaign_id?: string | null;
-  kind?: "general" | "support" | "agreement" | "conversation";
+  kind?: "general" | "support" | "agreement" | "conversation" | "compliance";
   metadata?: Record<string, string>;
 }
 
@@ -598,7 +614,7 @@ export interface DownloadUrlResponse {
 
 export type SupportTicketStatus = "open" | "in_progress" | "closed";
 
-export type SupportTicketSource = "internal" | "external" | "contact_request";
+export type SupportTicketSource = "internal" | "external" | "contact_request" | "document_review";
 
 export type SupportContactInterest = "dmc" | "mri";
 
@@ -608,6 +624,7 @@ export interface SupportTicket {
   id: string;
   source?: SupportTicketSource;
   user_id?: string | null;
+  company_id?: string | null;
   visitor_email?: string | null;
   visitor_name?: string | null;
   company?: string | null;

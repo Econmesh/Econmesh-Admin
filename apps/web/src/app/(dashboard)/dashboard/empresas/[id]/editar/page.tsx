@@ -72,8 +72,18 @@ export default function EditarEmpresaPage() {
         mode="edit"
         initialData={company}
         submitLabel="Salvar alterações"
-        onSubmit={async (payload) => {
+        onSubmit={async (payload, files) => {
           await adminCompaniesService.update(company.id, payload);
+          if (files.operating_license) {
+            await adminCompaniesService.uploadDocument(
+              company.id,
+              "operating_license",
+              files.operating_license,
+            );
+          }
+          if (files.mtr) {
+            await adminCompaniesService.uploadDocument(company.id, "mtr", files.mtr);
+          }
           toast.success("Empresa atualizada com sucesso.");
           router.push(`/dashboard/empresas/${company.id}`);
         }}

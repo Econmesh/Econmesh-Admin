@@ -71,7 +71,7 @@ export default function NovaEmpresaPage() {
       <CompanyForm
         mode="create"
         submitLabel="Cadastrar empresa"
-        onSubmit={async (payload) => {
+        onSubmit={async (payload, files) => {
           if (!ownerUserId) {
             toast.error("Selecione o usuário proprietário.");
             return;
@@ -80,6 +80,12 @@ export default function NovaEmpresaPage() {
             ...payload,
             owner_user_id: ownerUserId,
           });
+          await adminCompaniesService.uploadDocument(
+            company.id,
+            "operating_license",
+            files.operating_license,
+          );
+          await adminCompaniesService.uploadDocument(company.id, "mtr", files.mtr);
           toast.success("Empresa cadastrada com sucesso.");
           router.push(`/dashboard/empresas/${company.id}`);
         }}

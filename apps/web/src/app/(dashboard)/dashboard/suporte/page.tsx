@@ -23,6 +23,7 @@ const SOURCE_FILTERS: { label: string; value: SupportTicketSource | "all" }[] = 
   { label: "Suporte Interno", value: "internal" },
   { label: "Suporte Externo", value: "external" },
   { label: "Solicitação de Contato", value: "contact_request" },
+  { label: "Documentos", value: "document_review" },
 ];
 
 export default function SuportePage() {

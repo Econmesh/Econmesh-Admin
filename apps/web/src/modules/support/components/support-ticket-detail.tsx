@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { useSupport } from "@/contexts/support-context";
+import { DocumentReviewPanel } from "@/modules/support/components/document-review-panel";
 import { SupportMessageThread } from "@/modules/support/components/support-message-thread";
 import { UserOnlineBadge } from "@/modules/support/components/user-online-badge";
 import { useTicketMessagesRealtime } from "@/modules/support/hooks/use-ticket-messages-realtime";
@@ -187,6 +188,7 @@ export function SupportTicketDetailView({ ticketId }: Props) {
   const isNoteMode = composerMode === "note";
   const isExternal = ticket.source === "external";
   const isContactRequest = ticket.source === "contact_request";
+  const isDocumentReview = ticket.source === "document_review";
   const isPublicVisitor = isExternal || isContactRequest;
 
   return (
@@ -205,6 +207,11 @@ export function SupportTicketDetailView({ ticketId }: Props) {
             <h1 className="text-2xl font-semibold">
               {formatTicketNumber(ticket.ticket_number)} — {ticket.subject}
             </h1>
+            {isDocumentReview && (
+              <Badge className="border-transparent bg-violet-500/15 text-violet-700 dark:text-violet-400">
+                Documentos
+              </Badge>
+            )}
             {isContactRequest && (
               <Badge className="border-transparent bg-orange-500/15 text-orange-700 dark:text-orange-400">
                 Solicitação de Contato
@@ -245,6 +252,15 @@ export function SupportTicketDetailView({ ticketId }: Props) {
           )}
         </div>
       </div>
+
+      {isDocumentReview && ticket.company_id ? (
+        <DocumentReviewPanel
+          companyId={ticket.company_id}
+          onReviewed={() => {
+            void loadTicket();
+          }}
+        />
+      ) : null}
 
       <Tabs defaultValue="messages">
         <TabsList>
