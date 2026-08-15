@@ -1146,6 +1146,50 @@ export interface AdminPendingUserListResponse {
   page_size: number;
 }
 
+export interface AdminAccessGrant {
+  id: string;
+  company_id: string;
+  company_name: string | null;
+  user_id: string;
+  user_name: string | null;
+  user_email: string | null;
+  expires_at: string;
+  reason: string | null;
+  granted_by_user_id: string;
+  granted_by_name: string | null;
+  revoked_at: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminAccessGrantListResponse {
+  items: AdminAccessGrant[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface AdminAccessGrantCreatePayload {
+  user_id?: string;
+  company_id?: string;
+  expires_at: string;
+  reason?: string;
+}
+
+export interface AdminAccessGrantTarget {
+  user_id: string;
+  user_name: string | null;
+  user_email: string | null;
+  user_phone: string | null;
+  company_id: string;
+  company_name: string | null;
+}
+
+export interface AdminAccessGrantTargetListResponse {
+  items: AdminAccessGrantTarget[];
+}
+
 export interface BillingInvoice {
   id: string;
   subscription_id: string;

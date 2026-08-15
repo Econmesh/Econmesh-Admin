@@ -13,6 +13,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
+import { UserAccessGrantCard } from "@/modules/billing/components/user-access-grant-card";
 import { ProfileView } from "@/modules/profile/components/profile-view";
 import { DeleteUserDialog } from "@/modules/users/components/delete-user-dialog";
 import { ROLE_OPTIONS } from "@/modules/users/schemas";
@@ -99,6 +100,8 @@ export function UserDetailView({
             </dl>
           </CardContent>
         </Card>
+
+        <UserAccessGrantCard userId={user.id} />
 
         <ProfileView profile={profile} />
       </div>

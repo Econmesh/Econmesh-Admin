@@ -1,5 +1,9 @@
 import { api } from "@/services/api/client";
 import type {
+  AdminAccessGrant,
+  AdminAccessGrantCreatePayload,
+  AdminAccessGrantListResponse,
+  AdminAccessGrantTargetListResponse,
   AdminPendingUserListResponse,
   AdminSubscriptionListItem,
   AdminSubscriptionListResponse,
@@ -87,5 +91,28 @@ export const adminBillingService = {
       "/admin/billing/subscriptions/pending-users?page=1&page_size=100",
       { auth: true },
     );
+  },
+  listAccessGrants(params: { userId?: string; activeOnly?: boolean; page?: number } = {}) {
+    return api.get<AdminAccessGrantListResponse>(
+      `/admin/billing/access-grants${qs({
+        user_id: params.userId,
+        active_only: params.activeOnly,
+        page: params.page ?? 1,
+        page_size: 100,
+      })}`,
+      { auth: true },
+    );
+  },
+  searchAccessGrantTargets(q: string) {
+    return api.get<AdminAccessGrantTargetListResponse>(
+      `/admin/billing/access-grant-targets${qs({ q })}`,
+      { auth: true },
+    );
+  },
+  createAccessGrant(body: AdminAccessGrantCreatePayload) {
+    return api.post<AdminAccessGrant>("/admin/billing/access-grants", body, { auth: true });
+  },
+  revokeAccessGrant(id: string) {
+    return api.post<AdminAccessGrant>(`/admin/billing/access-grants/${id}/revoke`, {}, { auth: true });
   },
 };
