@@ -850,6 +850,7 @@ export interface ContractSection {
   title: string;
   content_html: string;
   contract_type: SectionAppliesTo;
+  opportunity_types: OpportunityType[];
   sort_order: number;
   created_by: string;
   is_active: boolean;
@@ -868,7 +869,8 @@ export interface ContractSectionListResponse {
 export interface ContractSectionCreatePayload {
   title: string;
   content_html: string;
-  contract_type: SectionAppliesTo;
+  contract_type?: SectionAppliesTo;
+  opportunity_types: OpportunityType[];
   sort_order: number;
   is_active?: boolean;
   is_company_editable?: boolean;
@@ -878,6 +880,7 @@ export interface ContractSectionUpdatePayload {
   title?: string;
   content_html?: string;
   contract_type?: SectionAppliesTo;
+  opportunity_types?: OpportunityType[];
   sort_order?: number;
   is_active?: boolean;
   is_company_editable?: boolean;
@@ -899,6 +902,19 @@ export interface MinutaStructureResponse {
   admin_sections: ContractSection[];
 }
 
+export interface ContractPreviewSection {
+  title: string;
+  content_html: string;
+  is_system: boolean;
+}
+
+export interface ContractPreviewResponse {
+  opportunity_type: OpportunityType;
+  title: string;
+  html: string;
+  sections: ContractPreviewSection[];
+}
+
 export type ContractProposalStatus =
   | "draft"
   | "pending_approval"
@@ -914,6 +930,7 @@ export interface ContractProposalListItem {
   title: string;
   status: ContractProposalStatus;
   contract_type: ContractType;
+  opportunity_type?: string | null;
   agreement_id: string | null;
   created_at: string;
   updated_at: string;
@@ -948,6 +965,7 @@ export interface OpportunitySnapshot {
   price_negotiable: boolean;
   periodicity: string | null;
   prazo: string | null;
+  opportunity_type?: string | null;
 }
 
 export interface ProposalSection {

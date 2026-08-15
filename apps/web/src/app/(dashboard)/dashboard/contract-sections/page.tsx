@@ -2,33 +2,51 @@
 
 import { Button } from "@econmesh-admin/ui/components/button";
 import { Skeleton } from "@econmesh-admin/ui/components/skeleton";
+import { cn } from "@econmesh-admin/ui/lib/utils";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { ContractSectionStructure } from "@/modules/contract-sections/components/contract-section-structure";
-import { CONTRACT_TYPE_OPTIONS } from "@/modules/contract-sections/schemas";
+import { OPPORTUNITY_TYPE_OPTIONS } from "@/modules/contract-sections/schemas";
+import { OpportunityTypeBadge } from "@/modules/opportunities/components/opportunity-type-badge";
 import { adminContractSectionsService } from "@/services/admin/contract-sections.service";
 import type {
+  ContractPreviewResponse,
   ContractSection,
-  SectionAppliesTo,
+  OpportunityType,
   SystemSectionInfo,
 } from "@/types/api";
 import { ApiError } from "@/utils/errors";
+
+type ScopeTab = "todos" | OpportunityType;
+
+const SCOPE_TABS: { value: ScopeTab; label: string }[] = [
+  { value: "todos", label: "Todos os tipos" },
+  ...OPPORTUNITY_TYPE_OPTIONS.map((opt) => ({
+    value: opt.value,
+    label: opt.label,
+  })),
+];
 
 export default function ContractSectionsPage() {
   const [systemSections, setSystemSections] = useState<SystemSectionInfo[]>([]);
   const [adminSections, setAdminSections] = useState<ContractSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [reordering, setReordering] = useState(false);
-  const [contractType, setContractType] = useState<SectionAppliesTo | "">("");
+  const [scope, setScope] = useState<ScopeTab>("todos");
+  const [view, setView] = useState<"estrutura" | "preview">("estrutura");
+  const [preview, setPreview] = useState<ContractPreviewResponse | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const opportunityType = scope === "todos" ? undefined : scope;
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await adminContractSectionsService.structure({
-        contract_type: contractType || undefined,
+        opportunity_type: opportunityType,
       });
       setSystemSections(data.system_sections);
       setAdminSections(
@@ -43,15 +61,45 @@ export default function ContractSectionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [contractType]);
+  }, [opportunityType]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    if (scope === "todos") {
+      setView("estrutura");
+      setPreview(null);
+      return;
+    }
+    let cancelled = false;
+    setPreviewLoading(true);
+    void adminContractSectionsService
+      .preview(scope)
+      .then((data) => {
+        if (!cancelled) setPreview(data);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          toast.error(
+            error instanceof ApiError
+              ? error.message
+              : "Não foi possível carregar a pré-visualização.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setPreviewLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [scope]);
+
   async function handleMove(index: number, direction: -1 | 1) {
-    if (contractType) {
-      toast.error("Limpe o filtro de escopo para reordenar as seções.");
+    if (scope !== "todos") {
+      toast.error("Selecione “Todos os tipos” para reordenar as seções.");
       return;
     }
     const target = index + direction;
@@ -86,8 +134,8 @@ export default function ContractSectionsPage() {
         <div>
           <h1 className="text-2xl font-semibold">Seções contratuais</h1>
           <p className="text-sm text-muted-foreground">
-            Visualize a estrutura completa da minuta: seções automáticas do sistema
-            e seções configuradas pelo administrador.
+            Visualize como o contrato fica em cada tipo de oportunidade:
+            comercialização, simbiose industrial e compartilhamento de ativos.
           </p>
         </div>
         <Link href="/dashboard/contract-sections/novo" className="inline-flex">
@@ -98,26 +146,70 @@ export default function ContractSectionsPage() {
         </Link>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="text-sm text-muted-foreground" htmlFor="filter-type">
-          Filtrar seções admin por escopo
-        </label>
-        <select
-          id="filter-type"
-          value={contractType}
-          onChange={(e) => setContractType(e.target.value as SectionAppliesTo | "")}
-          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-        >
-          <option value="">Todos</option>
-          {CONTRACT_TYPE_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+      <div className="flex flex-wrap gap-2">
+        {SCOPE_TABS.map((tab) => (
+          <button
+            key={tab.value}
+            type="button"
+            onClick={() => setScope(tab.value)}
+            className={cn(
+              "rounded-full border px-3 py-1.5 text-sm transition-colors",
+              scope === tab.value
+                ? "border-primary bg-primary/10 text-foreground"
+                : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40",
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {loading ? (
+      {scope !== "todos" ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <OpportunityTypeBadge type={scope} />
+          <div className="flex rounded-md border border-border p-0.5">
+            <button
+              type="button"
+              onClick={() => setView("estrutura")}
+              className={cn(
+                "rounded px-3 py-1 text-xs font-medium",
+                view === "estrutura"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground",
+              )}
+            >
+              Estrutura
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("preview")}
+              className={cn(
+                "rounded px-3 py-1 text-xs font-medium",
+                view === "preview"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground",
+              )}
+            >
+              Pré-visualização
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {view === "preview" && scope !== "todos" ? (
+        previewLoading ? (
+          <Skeleton className="h-[32rem] rounded-xl" />
+        ) : preview ? (
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold">{preview.title}</h2>
+            <iframe
+              title={preview.title}
+              srcDoc={preview.html}
+              className="min-h-[40rem] w-full rounded-xl border border-border bg-white"
+            />
+          </div>
+        ) : null
+      ) : loading ? (
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, index) => (
             <Skeleton key={index} className="h-28 rounded-xl" />
@@ -127,13 +219,13 @@ export default function ContractSectionsPage() {
         <ContractSectionStructure
           systemSections={systemSections}
           adminSections={adminSections}
-          reordering={reordering || Boolean(contractType)}
+          reordering={reordering || scope !== "todos"}
           onMove={handleMove}
         />
       )}
-      {contractType ? (
+      {scope !== "todos" && view === "estrutura" ? (
         <p className="text-xs text-muted-foreground">
-          Limpe o filtro de escopo para reordenar as seções administrativas.
+          Selecione “Todos os tipos” para reordenar as seções administrativas.
         </p>
       ) : null}
     </div>

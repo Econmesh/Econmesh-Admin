@@ -1,9 +1,11 @@
 import type {
+  ContractPreviewResponse,
   ContractSection,
   ContractSectionCreatePayload,
   ContractSectionListResponse,
   ContractSectionUpdatePayload,
   MinutaStructureResponse,
+  OpportunityType,
   SectionAppliesTo,
 } from "@/types/api";
 import { api } from "@/services/api/client";
@@ -25,6 +27,7 @@ export const adminContractSectionsService = {
       page?: number;
       page_size?: number;
       contract_type?: SectionAppliesTo;
+      opportunity_type?: OpportunityType;
       active_only?: boolean;
     } = {},
   ) {
@@ -34,9 +37,23 @@ export const adminContractSectionsService = {
     );
   },
 
-  structure(params: { contract_type?: SectionAppliesTo } = {}) {
+  structure(
+    params: {
+      contract_type?: SectionAppliesTo;
+      opportunity_type?: OpportunityType;
+    } = {},
+  ) {
     return api.get<MinutaStructureResponse>(
       `/admin/contract-sections/structure${buildQuery(params)}`,
+      { auth: true },
+    );
+  },
+
+  preview(opportunityType: OpportunityType) {
+    return api.get<ContractPreviewResponse>(
+      `/admin/contract-sections/preview${buildQuery({
+        opportunity_type: opportunityType,
+      })}`,
       { auth: true },
     );
   },

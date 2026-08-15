@@ -10,12 +10,18 @@ import {
   useFormErrors,
 } from "@/modules/auth/components/auth-form";
 import {
-  CONTRACT_TYPE_OPTIONS,
+  OPPORTUNITY_TYPE_OPTIONS,
   contractSectionSchema,
   type ContractSectionFormValues,
 } from "@/modules/contract-sections/schemas";
-import type { ContractSection } from "@/types/api";
+import type { ContractSection, OpportunityType } from "@/types/api";
 import { ApiError } from "@/utils/errors";
+
+const ALL_TYPES: OpportunityType[] = [
+  "comercializacao",
+  "simbiose_industrial",
+  "compartilhamento",
+];
 
 type ContractSectionFormProps = {
   mode: "create" | "edit";
@@ -36,6 +42,17 @@ export function ContractSectionForm({
   const [isCompanyEditable, setIsCompanyEditable] = useState(
     initialData?.is_company_editable ?? false,
   );
+  const [opportunityTypes, setOpportunityTypes] = useState<OpportunityType[]>(
+    initialData?.opportunity_types?.length
+      ? initialData.opportunity_types
+      : ALL_TYPES,
+  );
+
+  function toggleType(type: OpportunityType) {
+    setOpportunityTypes((prev) =>
+      prev.includes(type) ? prev.filter((item) => item !== type) : [...prev, type],
+    );
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -44,8 +61,8 @@ export function ContractSectionForm({
     const values = {
       title: String(form.get("title") ?? ""),
       content_html: String(form.get("content_html") ?? ""),
-      contract_type: String(form.get("contract_type") ?? "servico"),
-      sort_order: Number(form.get("sort_order") ?? 0),
+      opportunity_types: opportunityTypes,
+      sort_order: Number(form.get("sort_order") ?? initialData?.sort_order ?? 0),
       is_active: isActive,
       is_company_editable: isCompanyEditable,
     };
@@ -86,28 +103,30 @@ export function ContractSectionForm({
       </FormField>
 
       <FormField
-        label="Aplicar a"
-        id="contract_type"
-        error={errors.contract_type}
+        label="Tipos de oportunidade"
+        id="opportunity_types"
+        error={errors.opportunity_types}
       >
-        <select
-          id="contract_type"
-          name="contract_type"
-          defaultValue={mode === "edit" ? initialData?.contract_type : "servico"}
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-        >
-          {CONTRACT_TYPE_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
+        <div className="space-y-2 rounded-md border border-input p-3">
+          {OPPORTUNITY_TYPE_OPTIONS.map((opt) => (
+            <label
+              key={opt.value}
+              className="flex cursor-pointer items-center gap-2 text-sm"
+            >
+              <input
+                type="checkbox"
+                checked={opportunityTypes.includes(opt.value)}
+                onChange={() => toggleType(opt.value)}
+                className="size-4 rounded border-input"
+              />
               {opt.label}
-            </option>
+            </label>
           ))}
-        </select>
+        </div>
         <p className="mt-1 text-xs text-muted-foreground">
-          Escolha um tipo específico, oportunidades ou todos os tipos de contrato.
+          A cláusula entra nas minutas dos tipos marcados.
         </p>
       </FormField>
-
-
 
       <FormField label="Conteúdo (HTML)" id="content_html" error={errors.content_html}>
         <textarea
