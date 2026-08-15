@@ -27,7 +27,10 @@ export default function NovaContractSectionPage() {
         mode="create"
         submitLabel="Criar seção"
         onSubmit={async (values: ContractSectionFormValues) => {
-          const section = await adminContractSectionsService.create(values);
+          const section = await adminContractSectionsService.create({
+            ...values,
+            contract_type: "todos",
+          });
           toast.success("Seção criada com sucesso.");
           router.push(`/dashboard/contract-sections/${section.id}`);
         }}

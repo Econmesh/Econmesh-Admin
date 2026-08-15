@@ -850,6 +850,7 @@ export interface ContractSection {
   title: string;
   content_html: string;
   contract_type: SectionAppliesTo;
+  opportunity_types: OpportunityType[];
   sort_order: number;
   created_by: string;
   is_active: boolean;
@@ -868,7 +869,8 @@ export interface ContractSectionListResponse {
 export interface ContractSectionCreatePayload {
   title: string;
   content_html: string;
-  contract_type: SectionAppliesTo;
+  contract_type?: SectionAppliesTo;
+  opportunity_types: OpportunityType[];
   sort_order: number;
   is_active?: boolean;
   is_company_editable?: boolean;
@@ -878,6 +880,7 @@ export interface ContractSectionUpdatePayload {
   title?: string;
   content_html?: string;
   contract_type?: SectionAppliesTo;
+  opportunity_types?: OpportunityType[];
   sort_order?: number;
   is_active?: boolean;
   is_company_editable?: boolean;
@@ -899,6 +902,19 @@ export interface MinutaStructureResponse {
   admin_sections: ContractSection[];
 }
 
+export interface ContractPreviewSection {
+  title: string;
+  content_html: string;
+  is_system: boolean;
+}
+
+export interface ContractPreviewResponse {
+  opportunity_type: OpportunityType;
+  title: string;
+  html: string;
+  sections: ContractPreviewSection[];
+}
+
 export type ContractProposalStatus =
   | "draft"
   | "pending_approval"
@@ -914,6 +930,7 @@ export interface ContractProposalListItem {
   title: string;
   status: ContractProposalStatus;
   contract_type: ContractType;
+  opportunity_type?: string | null;
   agreement_id: string | null;
   created_at: string;
   updated_at: string;
@@ -948,6 +965,7 @@ export interface OpportunitySnapshot {
   price_negotiable: boolean;
   periodicity: string | null;
   prazo: string | null;
+  opportunity_type?: string | null;
 }
 
 export interface ProposalSection {
@@ -993,4 +1011,222 @@ export interface ContractProposal {
   my_role: "offerer" | "interested" | null;
   created_at: string;
   updated_at: string;
+}
+
+export type BillingPlanCycle = "MONTHLY" | "YEARLY";
+export type BillingType = "PIX" | "BOLETO" | "CREDIT_CARD";
+export type CouponDiscountType = "PERCENTAGE" | "FIXED";
+export type FineType = "PERCENTAGE" | "FIXED";
+export type SubscriptionStatus =
+  | "pending"
+  | "trialing"
+  | "active"
+  | "past_due"
+  | "cancelled"
+  | "expired";
+export type InvoiceStatus =
+  | "pending"
+  | "confirmed"
+  | "received"
+  | "overdue"
+  | "refunded"
+  | "deleted"
+  | "other";
+
+export interface BillingPlan {
+  id: string;
+  name: string;
+  description: string | null;
+  features: string[];
+  price: number;
+  cycle: BillingPlanCycle;
+  is_active: boolean;
+  sort_order: number;
+  trial_days: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BillingPlanListResponse {
+  items: BillingPlan[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface BillingPlanCreatePayload {
+  name: string;
+  description?: string | null;
+  features?: string[];
+  price: number;
+  cycle: BillingPlanCycle;
+  is_active?: boolean;
+  sort_order?: number;
+  trial_days?: number | null;
+}
+
+export interface BillingPlanUpdatePayload {
+  name?: string;
+  description?: string | null;
+  features?: string[];
+  price?: number;
+  cycle?: BillingPlanCycle;
+  is_active?: boolean;
+  sort_order?: number;
+  trial_days?: number | null;
+}
+
+export interface BillingSettings {
+  id: string;
+  trial_enabled: boolean;
+  default_trial_days: number;
+  allowed_billing_types: BillingType[];
+  fine_value: number;
+  fine_type: FineType;
+  interest_value: number;
+  grace_period_days: number;
+  updated_at: string;
+}
+
+export interface BillingCoupon {
+  id: string;
+  code: string;
+  discount_type: CouponDiscountType;
+  discount_value: number;
+  valid_from: string | null;
+  valid_until: string | null;
+  max_uses: number | null;
+  used_count: number;
+  applicable_plan_ids: string[];
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BillingCouponListResponse {
+  items: BillingCoupon[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface BillingCouponCreatePayload {
+  code: string;
+  discount_type: CouponDiscountType;
+  discount_value: number;
+  valid_from?: string | null;
+  valid_until?: string | null;
+  max_uses?: number | null;
+  applicable_plan_ids?: string[];
+  is_active?: boolean;
+}
+
+export interface AdminSubscriptionListItem {
+  id: string;
+  company_id: string;
+  company_name: string | null;
+  user_id: string;
+  user_name: string | null;
+  user_email: string | null;
+  plan_id: string;
+  plan_name: string | null;
+  status: SubscriptionStatus;
+  billing_type: BillingType;
+  price: number;
+  cycle: BillingPlanCycle;
+  coupon_code: string | null;
+  trial_ends_at: string | null;
+  current_period_end: string | null;
+  cancelled_at: string | null;
+  created_at: string;
+}
+
+export interface AdminSubscriptionListResponse {
+  items: AdminSubscriptionListItem[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface AdminPendingUserItem {
+  user_id: string;
+  user_name: string | null;
+  user_email: string | null;
+  company_id: string | null;
+  company_name: string | null;
+  created_at: string | null;
+}
+
+export interface AdminPendingUserListResponse {
+  items: AdminPendingUserItem[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface AdminAccessGrant {
+  id: string;
+  company_id: string;
+  company_name: string | null;
+  user_id: string;
+  user_name: string | null;
+  user_email: string | null;
+  expires_at: string;
+  reason: string | null;
+  granted_by_user_id: string;
+  granted_by_name: string | null;
+  revoked_at: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminAccessGrantListResponse {
+  items: AdminAccessGrant[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface AdminAccessGrantCreatePayload {
+  user_id?: string;
+  company_id?: string;
+  expires_at: string;
+  reason?: string;
+}
+
+export interface AdminAccessGrantTarget {
+  user_id: string;
+  user_name: string | null;
+  user_email: string | null;
+  user_phone: string | null;
+  company_id: string;
+  company_name: string | null;
+}
+
+export interface AdminAccessGrantTargetListResponse {
+  items: AdminAccessGrantTarget[];
+}
+
+export interface BillingInvoice {
+  id: string;
+  subscription_id: string;
+  value: number;
+  due_date: string | null;
+  status: InvoiceStatus;
+  asaas_status: string | null;
+  billing_type: string | null;
+  invoice_url: string | null;
+  bank_slip_url: string | null;
+  pix_qr_code: string | null;
+  pix_copy_paste: string | null;
+  paid_at: string | null;
+  created_at: string;
+}
+
+export interface BillingInvoiceListResponse {
+  items: BillingInvoice[];
+  total: number;
+  page: number;
+  page_size: number;
 }

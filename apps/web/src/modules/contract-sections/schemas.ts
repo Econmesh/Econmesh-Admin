@@ -1,12 +1,14 @@
 import { z } from "zod";
 
-export const CONTRACT_TYPE_OPTIONS = [
-  { value: "servico" as const, label: "Serviço" },
-  { value: "fornecimento" as const, label: "Fornecimento" },
-  { value: "parceria" as const, label: "Parceria" },
-  { value: "outro" as const, label: "Outro" },
-  { value: "oportunidades" as const, label: "Oportunidades" },
-  { value: "todos" as const, label: "Todos os tipos" },
+import type { OpportunityType } from "@/types/api";
+
+export const OPPORTUNITY_TYPE_OPTIONS: {
+  value: OpportunityType;
+  label: string;
+}[] = [
+  { value: "comercializacao", label: "Comercialização" },
+  { value: "simbiose_industrial", label: "Simbiose Industrial" },
+  { value: "compartilhamento", label: "Compartilhamento de ativos" },
 ];
 
 export const CONTRACT_TYPE_LABELS: Record<string, string> = {
@@ -21,14 +23,11 @@ export const CONTRACT_TYPE_LABELS: Record<string, string> = {
 export const contractSectionSchema = z.object({
   title: z.string().min(2, "Título deve ter pelo menos 2 caracteres."),
   content_html: z.string().min(1, "Conteúdo é obrigatório."),
-  contract_type: z.enum([
-    "servico",
-    "fornecimento",
-    "parceria",
-    "outro",
-    "oportunidades",
-    "todos",
-  ]),
+  opportunity_types: z
+    .array(
+      z.enum(["comercializacao", "simbiose_industrial", "compartilhamento"]),
+    )
+    .min(1, "Selecione pelo menos um tipo de oportunidade."),
   sort_order: z.coerce.number().int().min(0),
   is_active: z.boolean().default(true),
   is_company_editable: z.boolean().default(false),

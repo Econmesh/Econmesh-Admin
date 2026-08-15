@@ -19,6 +19,10 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasSession = request.cookies.has(AUTH_COOKIE_NAME);
 
+  if (pathname === "/dashboard/user" || pathname === "/dashboard/users") {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
   if (pathname === "/") {
     const destination = hasSession ? "/dashboard" : "/login";
     return NextResponse.redirect(new URL(destination, request.url));

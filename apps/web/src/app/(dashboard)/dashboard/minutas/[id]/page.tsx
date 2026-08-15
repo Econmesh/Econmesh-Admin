@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { OpportunityTypeBadge } from "@/modules/opportunities/components/opportunity-type-badge";
 import {
   CONTRACT_PROPOSAL_STATUS_LABELS,
   CONTRACT_TYPE_LABELS,
@@ -49,12 +50,22 @@ export default function AdminMinutaDetailPage() {
           ← Minutas
         </Link>
         <h1 className="mt-2 text-2xl font-semibold">{proposal.title}</h1>
-        <p className="text-sm text-muted-foreground">
-          {CONTRACT_TYPE_LABELS[proposal.contract_type] ?? proposal.contract_type}
-          {" · "}
-          {CONTRACT_PROPOSAL_STATUS_LABELS[proposal.status] ?? proposal.status}
-          {" · "}
-          Atualizada em {formatProposalDate(proposal.updated_at)}
+        <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+          {proposal.opportunity.opportunity_type === "comercializacao" ||
+          proposal.opportunity.opportunity_type === "simbiose_industrial" ||
+          proposal.opportunity.opportunity_type === "compartilhamento" ? (
+            <OpportunityTypeBadge type={proposal.opportunity.opportunity_type} />
+          ) : (
+            <span>
+              {CONTRACT_TYPE_LABELS[proposal.contract_type] ?? proposal.contract_type}
+            </span>
+          )}
+          <span>
+            {" · "}
+            {CONTRACT_PROPOSAL_STATUS_LABELS[proposal.status] ?? proposal.status}
+            {" · "}
+            Atualizada em {formatProposalDate(proposal.updated_at)}
+          </span>
         </p>
       </div>
 

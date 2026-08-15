@@ -60,7 +60,13 @@ function LoginFormContent() {
     try {
       await signIn(parsed.data.email, parsed.data.password);
       const redirect = searchParams.get("redirect");
-      if (redirect?.startsWith("/")) {
+      if (
+        redirect &&
+        redirect.startsWith("/") &&
+        !redirect.startsWith("//") &&
+        redirect !== "/dashboard/user" &&
+        redirect !== "/dashboard/users"
+      ) {
         router.replace(redirect as Route);
       }
     } catch (error) {

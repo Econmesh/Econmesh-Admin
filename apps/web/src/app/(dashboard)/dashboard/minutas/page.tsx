@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { OpportunityTypeBadge } from "@/modules/opportunities/components/opportunity-type-badge";
 import {
   CONTRACT_PROPOSAL_STATUS_LABELS,
   CONTRACT_TYPE_LABELS,
@@ -77,7 +78,13 @@ export default function AdminMinutasPage() {
                     </p>
                   </td>
                   <td className="px-4 py-3">
-                    {CONTRACT_TYPE_LABELS[item.contract_type] ?? item.contract_type}
+                    {item.opportunity_type === "comercializacao" ||
+                    item.opportunity_type === "simbiose_industrial" ||
+                    item.opportunity_type === "compartilhamento" ? (
+                      <OpportunityTypeBadge type={item.opportunity_type} />
+                    ) : (
+                      CONTRACT_TYPE_LABELS[item.contract_type] ?? item.contract_type
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <Badge variant="secondary">

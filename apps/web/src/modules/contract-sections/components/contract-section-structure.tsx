@@ -13,7 +13,7 @@ import { ArrowDown, ArrowUp, FileText, Lock, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 
 import { EmptyState } from "@/components/feedback/empty-state";
-import { CONTRACT_TYPE_LABELS } from "@/modules/contract-sections/schemas";
+import { OpportunityTypeBadge } from "@/modules/opportunities/components/opportunity-type-badge";
 import type { ContractSection, SystemSectionInfo } from "@/types/api";
 
 type ContractSectionStructureProps = {
@@ -111,13 +111,23 @@ export function ContractSectionStructure({
                           </span>
                           {section.title}
                         </CardTitle>
-                        <CardDescription className="mt-1">
-                          {CONTRACT_TYPE_LABELS[section.contract_type] ??
-                            section.contract_type}
-                          {" · "}
-                          {section.is_company_editable
-                            ? "Editável pelas empresas"
-                            : "Somente leitura para empresas"}
+                        <CardDescription className="mt-1 flex flex-wrap items-center gap-1">
+                          {(section.opportunity_types?.length
+                            ? section.opportunity_types
+                            : ([
+                                "comercializacao",
+                                "simbiose_industrial",
+                                "compartilhamento",
+                              ] as const)
+                          ).map((type) => (
+                            <OpportunityTypeBadge key={type} type={type} />
+                          ))}
+                          <span className="text-muted-foreground">
+                            {" · "}
+                            {section.is_company_editable
+                              ? "Editável pelas empresas"
+                              : "Somente leitura para empresas"}
+                          </span>
                         </CardDescription>
                       </div>
                       <div className="flex shrink-0 flex-wrap items-center gap-1">
