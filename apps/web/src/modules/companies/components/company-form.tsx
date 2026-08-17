@@ -35,7 +35,7 @@ type CompanyFormProps =
       initialData?: never;
       onSubmit: (
         payload: CompanyCreatePayload,
-        files: { operating_license: File; mtr: File },
+        files: { operating_license: File; mtr: File; signature_authorization?: File | null },
       ) => Promise<void>;
       submitLabel: string;
     }
@@ -107,6 +107,7 @@ export function CompanyForm({ mode, initialData, onSubmit, submitLabel }: Compan
   const [logoUrl, setLogoUrl] = useState<string | null>(initialData?.logo_url ?? null);
   const [operatingLicense, setOperatingLicense] = useState<File | null>(null);
   const [mtr, setMtr] = useState<File | null>(null);
+  const [signatureAuthorization, setSignatureAuthorization] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { lookup: lookupCep, loading: cepLoading } = useCepLookup();
 
@@ -205,6 +206,7 @@ export function CompanyForm({ mode, initialData, onSubmit, submitLabel }: Compan
     const parsed = schema.safeParse(formValues);
     const licenseError = fileFieldError(operatingLicense, mode === "create");
     const mtrError = fileFieldError(mtr, mode === "create");
+    const authError = fileFieldError(signatureAuthorization, false);
     const fieldErrors: Record<string, string> = {};
 
     if (!parsed.success) {
@@ -215,6 +217,7 @@ export function CompanyForm({ mode, initialData, onSubmit, submitLabel }: Compan
     }
     if (licenseError) fieldErrors.operating_license = licenseError;
     if (mtrError) fieldErrors.mtr = mtrError;
+    if (authError) fieldErrors.signature_authorization = authError;
     if (Object.keys(fieldErrors).length > 0) {
       setErrors(fieldErrors);
       return;
@@ -229,7 +232,7 @@ export function CompanyForm({ mode, initialData, onSubmit, submitLabel }: Compan
             logo_storage_key: logoStorageKey,
             logo_url: logoUrl,
           },
-          { operating_license: operatingLicense!, mtr: mtr! },
+          { operating_license: operatingLicense!, mtr: mtr!, signature_authorization: signatureAuthorization },
         );
       } else {
         await onSubmit(
@@ -238,7 +241,7 @@ export function CompanyForm({ mode, initialData, onSubmit, submitLabel }: Compan
             logo_storage_key: logoStorageKey,
             logo_url: logoUrl,
           },
-          { operating_license: operatingLicense, mtr },
+          { operating_license: operatingLicense, mtr, signature_authorization: signatureAuthorization },
         );
       }
     } catch (error) {
@@ -417,7 +420,8 @@ export function CompanyForm({ mode, initialData, onSubmit, submitLabel }: Compan
         <div>
           <h2 className="text-base font-semibold">Documentos</h2>
           <p className="text-sm text-muted-foreground">
-            Licença de operação e comprovante do MTR Nacional (SINIR). PDF, JPEG ou PNG até 10 MB.
+            Licença de operação, comprovante do MTR Nacional (SINIR) e autorização de assinatura.
+            PDF, JPEG ou PNG até 10 MB.
           </p>
         </div>
 
@@ -453,6 +457,25 @@ export function CompanyForm({ mode, initialData, onSubmit, submitLabel }: Compan
             >
               Acessar o sistema
             </a>
+          </p>
+        </FormField>
+
+        <FormField
+          id="signature_authorization"
+          label="Autorização de assinatura (opcional)"
+          error={errors.signature_authorization}
+        >
+          <CurrentDocument file={initialData?.signature_authorization} />
+          <input
+            id="signature_authorization"
+            type="file"
+            accept={COMPLIANCE_ACCEPT}
+            className={fileInputClass}
+            onChange={(e) => setSignatureAuthorization(e.target.files?.[0] ?? null)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Procuração, contrato social ou documento que comprove autorização para assinar em nome
+            da empresa.
           </p>
         </FormField>
       </section>

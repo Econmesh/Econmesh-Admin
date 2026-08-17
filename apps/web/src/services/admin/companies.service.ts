@@ -2,6 +2,7 @@ import type {
   AdminCompanyCreatePayload,
   AdminCompanyListResponse,
   Company,
+  CompanyDocumentKind,
   CompanyUpdatePayload,
   LogoPresignResponse,
 } from "@/types/api";
@@ -44,7 +45,7 @@ export const adminCompaniesService = {
 
   uploadDocument(
     companyId: string,
-    kind: "operating_license" | "mtr",
+    kind: CompanyDocumentKind,
     file: File,
     options: { approve?: boolean } = {},
   ) {
@@ -59,7 +60,7 @@ export const adminCompaniesService = {
     );
   },
 
-  approveDocument(companyId: string, kind: "operating_license" | "mtr") {
+  approveDocument(companyId: string, kind: CompanyDocumentKind) {
     return api.post<Company>(
       `/admin/companies/${companyId}/documents/${kind}/approve`,
       {},
@@ -67,7 +68,7 @@ export const adminCompaniesService = {
     );
   },
 
-  rejectDocument(companyId: string, kind: "operating_license" | "mtr", reason: string) {
+  rejectDocument(companyId: string, kind: CompanyDocumentKind, reason: string) {
     return api.post<Company>(
       `/admin/companies/${companyId}/documents/${kind}/reject`,
       { reason },
