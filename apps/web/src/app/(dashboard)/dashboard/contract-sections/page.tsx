@@ -12,10 +12,12 @@ import { ContractSectionStructure } from "@/modules/contract-sections/components
 import { OPPORTUNITY_TYPE_OPTIONS } from "@/modules/contract-sections/schemas";
 import { OpportunityTypeBadge } from "@/modules/opportunities/components/opportunity-type-badge";
 import { adminContractSectionsService } from "@/services/admin/contract-sections.service";
+import { adminPlatformSettingsService } from "@/services/admin/platform-settings.service";
 import type {
   ContractPreviewResponse,
   ContractSection,
   OpportunityType,
+  PlatformSettings,
   SystemSectionInfo,
 } from "@/types/api";
 import { ApiError } from "@/utils/errors";
@@ -39,19 +41,24 @@ export default function ContractSectionsPage() {
   const [view, setView] = useState<"estrutura" | "preview">("estrutura");
   const [preview, setPreview] = useState<ContractPreviewResponse | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [foroSettings, setForoSettings] = useState<PlatformSettings | null>(null);
 
   const opportunityType = scope === "todos" ? undefined : scope;
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await adminContractSectionsService.structure({
-        opportunity_type: opportunityType,
-      });
+      const [data, settings] = await Promise.all([
+        adminContractSectionsService.structure({
+          opportunity_type: opportunityType,
+        }),
+        adminPlatformSettingsService.get(),
+      ]);
       setSystemSections(data.system_sections);
       setAdminSections(
         [...data.admin_sections].sort((a, b) => a.sort_order - b.sort_order),
       );
+      setForoSettings(settings);
     } catch (error) {
       toast.error(
         error instanceof ApiError
@@ -221,6 +228,8 @@ export default function ContractSectionsPage() {
           adminSections={adminSections}
           reordering={reordering || scope !== "todos"}
           onMove={handleMove}
+          foroSettings={foroSettings}
+          onForoSettingsSaved={setForoSettings}
         />
       )}
       {scope !== "todos" && view === "estrutura" ? (

@@ -941,6 +941,7 @@ export interface SystemSectionInfo {
   can_edit?: boolean;
   can_delete?: boolean;
   can_reorder?: boolean;
+  placement?: "start" | "end";
 }
 
 export interface MinutaStructureResponse {
@@ -1050,6 +1051,9 @@ export interface ContractProposal {
   contracted: PartySnapshot;
   opportunity: OpportunitySnapshot;
   sections: ProposalSection[];
+  foro_city?: string | null;
+  foro_state?: string | null;
+  foro_fill_mode?: ForoFillMode;
   pdf_file: ProposalPdfFile | null;
   agreement_id: string | null;
   change_request_message: string | null;
@@ -1137,8 +1141,13 @@ export interface BillingSettings {
 export interface PlatformSettings {
   id: string;
   require_signature_authorization: boolean;
+  foro_fill_mode: ForoFillMode;
+  foro_city: string | null;
+  foro_state: string | null;
   updated_at: string;
 }
+
+export type ForoFillMode = "admin" | "company";
 
 export interface BillingCoupon {
   id: string;

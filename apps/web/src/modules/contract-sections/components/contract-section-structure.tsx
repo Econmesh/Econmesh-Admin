@@ -13,14 +13,17 @@ import { ArrowDown, ArrowUp, FileText, Lock, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 
 import { EmptyState } from "@/components/feedback/empty-state";
+import { ForoSectionConfig } from "@/modules/contract-sections/components/foro-section-config";
 import { OpportunityTypeBadge } from "@/modules/opportunities/components/opportunity-type-badge";
-import type { ContractSection, SystemSectionInfo } from "@/types/api";
+import type { ContractSection, PlatformSettings, SystemSectionInfo } from "@/types/api";
 
 type ContractSectionStructureProps = {
   systemSections: SystemSectionInfo[];
   adminSections: ContractSection[];
   reordering?: boolean;
   onMove: (index: number, direction: -1 | 1) => void;
+  foroSettings: PlatformSettings | null;
+  onForoSettingsSaved: (settings: PlatformSettings) => void;
 };
 
 export function ContractSectionStructure({
@@ -28,19 +31,25 @@ export function ContractSectionStructure({
   adminSections,
   reordering = false,
   onMove,
+  foroSettings,
+  onForoSettingsSaved,
 }: ContractSectionStructureProps) {
+  const openingSections = systemSections.filter((section) => section.placement !== "end");
+  const closingSections = systemSections.filter((section) => section.placement === "end");
+  const foroNumber = openingSections.length + adminSections.length + 1;
+
   return (
     <div className="space-y-6">
       <section className="space-y-3">
         <div>
           <h2 className="text-lg font-semibold">Estrutura padrão da minuta</h2>
           <p className="text-sm text-muted-foreground">
-            Seções automáticas e obrigatórias. Ordem fixa — não podem ser editadas,
+            Seções automáticas de abertura. Ordem fixa — não podem ser editadas,
             excluídas ou reordenadas.
           </p>
         </div>
         <ol className="space-y-3">
-          {systemSections.map((section, index) => (
+          {openingSections.map((section, index) => (
             <li key={section.key}>
               <Card className="rounded-xl border-dashed bg-muted/20">
                 <CardHeader className="pb-2">
@@ -74,8 +83,8 @@ export function ContractSectionStructure({
           <div>
             <h2 className="text-lg font-semibold">Seções do administrador</h2>
             <p className="text-sm text-muted-foreground">
-              Aparecem após as seções automáticas. Reordene livremente; a ordem é
-              aplicada nas minutas em negociação.
+              Aparecem após as seções automáticas de abertura e antes do Foro.
+              Reordene livremente; a ordem é aplicada nas minutas em negociação.
             </p>
           </div>
           <Link href="/dashboard/contract-sections/novo" className="inline-flex">
@@ -90,7 +99,7 @@ export function ContractSectionStructure({
           <EmptyState
             icon={FileText}
             title="Nenhuma seção administrativa"
-            description="Crie seções que serão carregadas automaticamente nas minutas após as quatro seções fixas."
+            description="Crie seções que serão carregadas automaticamente nas minutas após as seções fixas de abertura e antes do Foro."
             action={
               <Link href="/dashboard/contract-sections/novo" className="inline-flex">
                 <Button>Nova seção</Button>
@@ -98,7 +107,7 @@ export function ContractSectionStructure({
             }
           />
         ) : (
-          <ol className="space-y-3" start={systemSections.length + 1}>
+          <ol className="space-y-3" start={openingSections.length + 1}>
             {adminSections.map((section, index) => (
               <li key={section.id}>
                 <Card className="rounded-xl">
@@ -107,7 +116,7 @@ export function ContractSectionStructure({
                       <div>
                         <CardTitle className="flex items-center gap-2 text-base">
                           <span className="text-muted-foreground">
-                            {systemSections.length + index + 1}.
+                            {openingSections.length + index + 1}.
                           </span>
                           {section.title}
                         </CardTitle>
@@ -177,6 +186,47 @@ export function ContractSectionStructure({
           </ol>
         )}
       </section>
+
+      {closingSections.map((section) => (
+        <section key={section.key} className="space-y-3">
+          <div>
+            <h2 className="text-lg font-semibold">Encerramento</h2>
+            <p className="text-sm text-muted-foreground">
+              Sempre a última seção do contrato, depois das cláusulas administrativas
+              e das seções adicionadas pelas empresas.
+            </p>
+          </div>
+          <Card className="rounded-xl border-dashed bg-muted/20">
+            <CardHeader className="pb-2">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <span className="text-muted-foreground">{foroNumber}.</span>
+                    {section.title}
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    Seção automática do sistema
+                  </CardDescription>
+                </div>
+                <Badge variant="secondary" className="shrink-0 gap-1">
+                  <Lock className="size-3" aria-hidden />
+                  Fixa
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">{section.description}</p>
+              {foroSettings ? (
+                <ForoSectionConfig
+                  settings={foroSettings}
+                  onSaved={onForoSettingsSaved}
+                />
+              ) : null}
+            </CardContent>
+          </Card>
+        </section>
+      ))}
     </div>
   );
 }
+
