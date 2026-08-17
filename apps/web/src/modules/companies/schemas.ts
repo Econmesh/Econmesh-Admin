@@ -79,6 +79,7 @@ export type CompanyFormValues = z.infer<typeof companyCreateSchema>;
 export type CompanyDocumentFiles = {
   operating_license?: File | null;
   mtr?: File | null;
+  signature_authorization?: File | null;
 };
 
 export const BRAZILIAN_STATES = [

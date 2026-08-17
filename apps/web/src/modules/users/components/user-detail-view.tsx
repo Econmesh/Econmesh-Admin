@@ -16,6 +16,7 @@ import { useState } from "react";
 import { UserAccessGrantCard } from "@/modules/billing/components/user-access-grant-card";
 import { ProfileView } from "@/modules/profile/components/profile-view";
 import { DeleteUserDialog } from "@/modules/users/components/delete-user-dialog";
+import { UserVisualSignaturesCard } from "@/modules/users/components/user-visual-signatures-card";
 import { ROLE_OPTIONS } from "@/modules/users/schemas";
 import type { AdminUserListItem, UserProfile } from "@/types/api";
 
@@ -102,6 +103,8 @@ export function UserDetailView({
         </Card>
 
         <UserAccessGrantCard userId={user.id} />
+
+        <UserVisualSignaturesCard userId={user.id} />
 
         <ProfileView profile={profile} />
       </div>

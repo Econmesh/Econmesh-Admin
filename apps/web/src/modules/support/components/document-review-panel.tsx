@@ -15,14 +15,20 @@ import {
   isAllowedComplianceFile,
 } from "@/modules/companies/schemas";
 import { adminCompaniesService } from "@/services/admin/companies.service";
-import type { Company, CompanyComplianceFile } from "@/types/api";
+import type { Company, CompanyComplianceFile, CompanyDocumentKind } from "@/types/api";
 import { ApiError } from "@/utils/errors";
 
-type DocumentKind = "operating_license" | "mtr";
+type DocumentKind = CompanyDocumentKind;
+type DocumentField = "operating_license" | "mtr_document" | "signature_authorization";
 
-const DOCUMENTS: { kind: DocumentKind; label: string; field: "operating_license" | "mtr_document" }[] = [
+const DOCUMENTS: { kind: DocumentKind; label: string; field: DocumentField }[] = [
   { kind: "operating_license", label: "Licença de operação", field: "operating_license" },
   { kind: "mtr", label: "MTR", field: "mtr_document" },
+  {
+    kind: "signature_authorization",
+    label: "Autorização de assinatura",
+    field: "signature_authorization",
+  },
 ];
 
 type Props = {
