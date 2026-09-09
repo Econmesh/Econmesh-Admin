@@ -3,7 +3,8 @@
 import { Button } from "@econmesh-admin/ui/components/button";
 import { Input } from "@econmesh-admin/ui/components/input";
 import { Label } from "@econmesh-admin/ui/components/label";
-import { Loader2 } from "lucide-react";
+import { cn } from "@econmesh-admin/ui/lib/utils";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useState, type ComponentProps, type FormEvent, type ReactNode } from "react";
 
 export function AuthForm({
@@ -69,14 +70,38 @@ export function FormField({
 }
 
 export function FormInput(props: ComponentProps<typeof Input> & { id: string }) {
-  const { id, "aria-invalid": ariaInvalid, ...rest } = props;
-  return (
+  const { id, "aria-invalid": ariaInvalid, type, className, ...rest } = props;
+  const isPassword = type === "password";
+  const [visible, setVisible] = useState(false);
+
+  const input = (
     <Input
       id={id}
+      type={isPassword && visible ? "text" : type}
       aria-invalid={ariaInvalid}
       aria-describedby={ariaInvalid ? `${id}-error` : undefined}
+      className={cn(isPassword && "pr-9", className)}
       {...rest}
     />
+  );
+
+  if (!isPassword) {
+    return input;
+  }
+
+  return (
+    <div className="relative">
+      {input}
+      <button
+        type="button"
+        className="absolute inset-y-0 right-0 flex items-center px-2.5 text-muted-foreground hover:text-foreground"
+        onClick={() => setVisible((current) => !current)}
+        aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
+        aria-pressed={visible}
+      >
+        {visible ? <EyeOff className="size-3.5" aria-hidden /> : <Eye className="size-3.5" aria-hidden />}
+      </button>
+    </div>
   );
 }
 

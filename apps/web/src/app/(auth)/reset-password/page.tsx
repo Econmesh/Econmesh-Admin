@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { toast } from "sonner";
 
@@ -19,7 +19,6 @@ import { resetPasswordSchema } from "@/utils/validation";
 
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const { resetPassword } = useAuth();
   const oobCode = searchParams.get("oobCode");
   const [loading, setLoading] = useState(false);
@@ -52,8 +51,9 @@ function ResetPasswordContent() {
     setLoading(true);
     try {
       await resetPassword(oobCode, parsed.data.password);
-      toast.success("Senha redefinida com sucesso!");
-      router.replace("/login");
+      toast.success("Senha redefinida. Entre com a nova senha.");
+      window.location.assign("/login");
+      return;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Falha ao redefinir senha.");
     } finally {
