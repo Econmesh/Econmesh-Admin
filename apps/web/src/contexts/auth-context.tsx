@@ -223,7 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const sendPasswordReset = useCallback(async (email: string) => {
     try {
       await sendPasswordResetEmail(getFirebaseAuth(), email, {
-        url: `${window.location.origin}/reset-password`,
+        url: `${window.location.origin}/login`,
       });
     } catch (error) {
       if (error && typeof error === "object" && "code" in error) {
