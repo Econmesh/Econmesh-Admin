@@ -167,7 +167,7 @@ export function SupportProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    if (!isAuthenticated || isLoading || !user) return;
+    if (!isAuthenticated || isLoading || !user || user.role !== "admin") return;
 
     const controller = new AbortController();
     let retryDelay = STREAM_RETRY_MS;

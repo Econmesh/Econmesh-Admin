@@ -7,11 +7,20 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { CompanyDetailView } from "@/modules/companies/components/company-detail-view";
+import { DmcCompanyDetailView } from "@/modules/dmc/components/dmc-companies";
+import { useAuth } from "@/hooks/use-auth";
 import { adminCompaniesService } from "@/services/admin/companies.service";
 import type { Company } from "@/types/api";
 import { ApiError } from "@/utils/errors";
 
 export default function EmpresaDetalhePage() {
+  const { user } = useAuth();
+  const params = useParams<{ id: string }>();
+  if (user?.role === "dmc_agent") return <DmcCompanyDetailView companyId={params.id} />;
+  return <AdminEmpresaDetalhePage />;
+}
+
+function AdminEmpresaDetalhePage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const [company, setCompany] = useState<Company | null>(null);

@@ -5,6 +5,8 @@ import { Skeleton } from "@econmesh-admin/ui/components/skeleton";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { useAuth } from "@/hooks/use-auth";
+import { DmcSupportList } from "@/modules/dmc/components/dmc-support";
 import { useSupport } from "@/contexts/support-context";
 import { SupportTicketList } from "@/modules/support/components/support-ticket-list";
 import { adminSupportService } from "@/services/admin/support.service";
@@ -27,6 +29,12 @@ const SOURCE_FILTERS: { label: string; value: SupportTicketSource | "all" }[] = 
 ];
 
 export default function SuportePage() {
+  const { user } = useAuth();
+  if (user?.role === "dmc_agent") return <DmcSupportList />;
+  return <AdminSuportePage />;
+}
+
+function AdminSuportePage() {
   const { subscribeGlobal, refreshSignal } = useSupport();
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(true);

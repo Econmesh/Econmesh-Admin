@@ -61,7 +61,7 @@ export function DashboardHeader() {
     <header className="relative z-50 flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/50 px-4 backdrop-blur-sm md:px-6">
       <div className="text-sm font-semibold md:hidden">Econmesh</div>
       <div className="flex-1" />
-      <SupportBell />
+      {user?.role === "admin" ? <SupportBell /> : null}
       <NotificationBell />
       <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
         <DropdownMenuTrigger
@@ -93,10 +93,12 @@ export function DashboardHeader() {
             <User className="size-4" />
             Meu Perfil
           </DropdownMenuItem>
-          <DropdownMenuItem render={<Link href="/settings" />} onClick={() => setMenuOpen(false)}>
-            <Settings className="size-4" />
-            Configurações
-          </DropdownMenuItem>
+          {user?.role === "admin" ? (
+            <DropdownMenuItem render={<Link href="/settings" />} onClick={() => setMenuOpen(false)}>
+              <Settings className="size-4" />
+              Configurações
+            </DropdownMenuItem>
+          ) : null}
           <DropdownMenuSeparator />
           <DropdownMenuItem
             variant="destructive"

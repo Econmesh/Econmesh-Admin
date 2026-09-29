@@ -13,6 +13,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import { ModeToggle } from "@/components/mode-toggle";
+import { DmcAttendanceSettings } from "@/modules/dmc/components/dmc-attendance-settings";
 import { adminPlatformSettingsService } from "@/services/admin/platform-settings.service";
 import type { PlatformSettings } from "@/types/api";
 import { ApiError } from "@/utils/errors";
@@ -117,6 +118,8 @@ export default function SettingsPage() {
           )}
         </CardContent>
       </Card>
+
+      <DmcAttendanceSettings />
     </div>
   );
 }

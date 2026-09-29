@@ -1,10 +1,16 @@
+"use client";
+
+import { useParams } from "next/navigation";
+
+import { useAuth } from "@/hooks/use-auth";
 import { AdminConversationDetailView } from "@/modules/conversations/components/admin-conversation-detail";
+import { DmcConversationThread } from "@/modules/dmc/components/dmc-conversations";
 
-type PageProps = {
-  params: Promise<{ id: string }>;
-};
-
-export default async function AdminConversaDetailPage({ params }: PageProps) {
-  const { id } = await params;
-  return <AdminConversationDetailView conversationId={id} />;
+export default function ConversaDetailPage() {
+  const { user } = useAuth();
+  const params = useParams<{ id: string }>();
+  if (user?.role === "dmc_agent") {
+    return <DmcConversationThread conversationId={params.id} />;
+  }
+  return <AdminConversationDetailView conversationId={params.id} />;
 }

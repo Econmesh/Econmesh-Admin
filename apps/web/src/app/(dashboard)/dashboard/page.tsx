@@ -21,6 +21,7 @@ import {
 import { useEffect, useState } from "react";
 
 import { useAuth } from "@/hooks/use-auth";
+import { DmcDashboardView } from "@/modules/dmc/components/dmc-dashboard";
 import {
   ActivityLineCard,
   FunnelChartCard,
@@ -33,6 +34,12 @@ import { adminDashboardService } from "@/services/admin/dashboard.service";
 import type { AdminDashboardResponse } from "@/types/dashboard";
 
 export default function DashboardPage() {
+  const { user } = useAuth();
+  if (user?.role === "dmc_agent") return <DmcDashboardView />;
+  return <AdminDashboard />;
+}
+
+function AdminDashboard() {
   const { user } = useAuth();
   const [data, setData] = useState<AdminDashboardResponse | null>(null);
   const [error, setError] = useState<string | null>(null);

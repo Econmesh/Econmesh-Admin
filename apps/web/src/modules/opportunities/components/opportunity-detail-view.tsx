@@ -40,6 +40,7 @@ type OpportunityDetailViewProps = {
 	opportunity: Opportunity;
 	onDeleted: () => void;
 	isOwner?: boolean;
+	readOnly?: boolean;
 };
 
 function DetailItem({
@@ -62,6 +63,7 @@ export function OpportunityDetailView({
 	opportunity,
 	onDeleted,
 	isOwner = false,
+	readOnly = false,
 }: OpportunityDetailViewProps) {
 	const [selectedImage, setSelectedImage] = useState(0);
 	const [showDelete, setShowDelete] = useState(false);
@@ -100,7 +102,9 @@ export function OpportunityDetailView({
 						</div>
 					</div>
 
-					{isOwner ? (
+					{readOnly ? (
+						<p className="text-sm text-muted-foreground">Somente leitura</p>
+					) : isOwner ? (
 						<div className="flex flex-wrap gap-2">
 							<Link
 								href={
@@ -215,7 +219,7 @@ export function OpportunityDetailView({
 							</CardContent>
 						</Card>
 
-						{!isOwner ? (
+						{!isOwner && !readOnly ? (
 							<Button className="w-full" size="lg" onClick={handleContact}>
 								<MessageCircle className="size-4" aria-hidden />
 								Entrar em contato

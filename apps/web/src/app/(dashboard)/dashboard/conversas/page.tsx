@@ -6,6 +6,8 @@ import { Skeleton } from "@econmesh-admin/ui/components/skeleton";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { useAuth } from "@/hooks/use-auth";
+import { DmcConversationsView } from "@/modules/dmc/components/dmc-conversations";
 import { useConversations } from "@/contexts/conversations-context";
 import { AdminConversationList } from "@/modules/conversations/components/admin-conversation-list";
 import { adminConversationsService } from "@/services/admin/conversations.service";
@@ -18,7 +20,13 @@ const FILTERS: { label: string; value: ConversationStatus | "all" }[] = [
   { label: "Encerradas", value: "closed" },
 ];
 
-export default function AdminConversasPage() {
+export default function ConversasPage() {
+  const { user } = useAuth();
+  if (user?.role === "dmc_agent") return <DmcConversationsView />;
+  return <AdminConversasPage />;
+}
+
+function AdminConversasPage() {
   const { subscribeGlobal, refreshSignal } = useConversations();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);

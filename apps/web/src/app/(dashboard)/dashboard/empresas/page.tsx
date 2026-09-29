@@ -8,11 +8,19 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { CompanyList } from "@/modules/companies/components/company-list";
+import { DmcCompaniesView } from "@/modules/dmc/components/dmc-companies";
+import { useAuth } from "@/hooks/use-auth";
 import { adminCompaniesService } from "@/services/admin/companies.service";
 import type { Company } from "@/types/api";
 import { ApiError } from "@/utils/errors";
 
 export default function EmpresasPage() {
+  const { user } = useAuth();
+  if (user?.role === "dmc_agent") return <DmcCompaniesView />;
+  return <AdminEmpresasPage />;
+}
+
+function AdminEmpresasPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
 

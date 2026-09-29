@@ -7,21 +7,27 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { useAuth } from "@/hooks/use-auth";
 import { OpportunityDetailView } from "@/modules/opportunities/components/opportunity-detail-view";
 import { adminOpportunitiesService } from "@/services/admin/opportunities.service";
+import { dmcAgentService } from "@/services/dmc/dmc.service";
 import type { Opportunity } from "@/types/api";
 import { ApiError } from "@/utils/errors";
 
 export default function OportunidadeDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const { user } = useAuth();
+  const readOnly = user?.role === "dmc_agent";
   const [opportunity, setOpportunity] = useState<Opportunity | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadOpportunity = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await adminOpportunitiesService.get(params.id);
+      const data = readOnly
+        ? await dmcAgentService.opportunity(params.id)
+        : await adminOpportunitiesService.get(params.id);
       setOpportunity(data);
     } catch (error) {
       toast.error(
@@ -33,7 +39,7 @@ export default function OportunidadeDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [params.id, router]);
+  }, [params.id, readOnly, router]);
 
   useEffect(() => {
     void loadOpportunity();
@@ -66,7 +72,8 @@ export default function OportunidadeDetailPage() {
 
       <OpportunityDetailView
         opportunity={opportunity}
-        isOwner={true}
+        isOwner={!readOnly}
+        readOnly={readOnly}
         onDeleted={() => router.push("/dashboard/oportunidades" as Route)}
       />
     </div>

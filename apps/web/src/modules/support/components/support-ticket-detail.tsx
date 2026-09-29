@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { useSupport } from "@/contexts/support-context";
+import { DmcTicketAssignBox } from "@/modules/dmc/components/dmc-ticket-assign";
 import { DocumentReviewPanel } from "@/modules/support/components/document-review-panel";
 import { SupportMessageThread } from "@/modules/support/components/support-message-thread";
 import { UserOnlineBadge } from "@/modules/support/components/user-online-badge";
@@ -252,6 +253,10 @@ export function SupportTicketDetailView({ ticketId }: Props) {
           )}
         </div>
       </div>
+
+      {ticket.interest === "dmc" ? (
+        <DmcTicketAssignBox ticket={ticket} onAssigned={() => void loadTicket()} />
+      ) : null}
 
       {isDocumentReview && ticket.company_id ? (
         <DocumentReviewPanel

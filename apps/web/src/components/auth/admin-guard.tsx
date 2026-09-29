@@ -13,8 +13,8 @@ export function AdminGuard({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (status !== "authenticated" || !user) return;
-    if (user.role !== "admin") {
-      toast.error("Acesso restrito a administradores.");
+    if (user.role !== "admin" && user.role !== "dmc_agent") {
+      toast.error("Acesso restrito a administradores e agentes DMC.");
       void signOutUser();
       router.replace("/login?reason=admin_required");
     }
@@ -24,7 +24,7 @@ export function AdminGuard({ children }: { children: ReactNode }) {
     return <PageSkeleton />;
   }
 
-  if (status !== "authenticated" || user?.role !== "admin") {
+  if (status !== "authenticated" || (user?.role !== "admin" && user?.role !== "dmc_agent")) {
     return <PageSkeleton />;
   }
 

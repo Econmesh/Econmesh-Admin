@@ -7,13 +7,16 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 import {
-  DASHBOARD_NAV_ITEMS,
   isDashboardNavActive,
+  navItemsForRole,
 } from "../constants/nav-items";
 import { Logo } from "@/components/brand/logo";
+import { useAuth } from "@/hooks/use-auth";
 
 export function DashboardSidebar() {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const items = navItemsForRole(user?.role);
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -39,7 +42,7 @@ export function DashboardSidebar() {
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 p-2">
-        {DASHBOARD_NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+        {items.map(({ href, label, icon: Icon }) => {
           const active = isDashboardNavActive(pathname, href);
 
           return (
