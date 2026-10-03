@@ -165,6 +165,7 @@ export type DiagnosticSummary = {
   updated_at: string;
   started_at: string | null;
   completed_at: string | null;
+  report_generated_at?: string | null;
 };
 
 export type DiagnosticDetail = DiagnosticSummary & {
@@ -192,39 +193,161 @@ export type DiagnosticCompanyItem = {
 
 export type AnswerInput = { question_id: string; value: AnswerValue; edited_at?: string };
 
-export type ReportAnswer = {
+/* ---------------------------------------------------------------- relatório
+ * Espelha ``MaturityReport`` (API). O mesmo documento alimenta a página web
+ * e o PDF; ele é gerado uma vez e persistido no diagnóstico.
+ */
+export type ReportOrigin = "registry" | "adjusted" | "diagnostic";
+export type ReportPerson = {
+  name: string | null;
+  job_title?: string | null;
+  email: string | null;
+  phone?: string | null;
+};
+export type ReportAxis = {
+  step_id: string;
+  order: number;
+  title: string;
+  short_title: string;
+  description: string | null;
+  status: "evaluated" | "maintenance";
+  percent: number | null;
+  points: number;
+  max_points: number;
+  ems_points: number;
+  ems_max: number;
+  scored_questions: number;
+  reading: string | null;
+};
+export type ReportPillar = {
+  pillar_id: string;
+  code: string;
+  name: string;
+  ems_weight: number | null;
+  points: number;
+  max_points: number;
+  percent: number | null;
+  ems_points: number;
+  ems_max: number;
+  answered: number;
+  total: number;
+  reading: string | null;
+};
+export type ReportIndicator = {
   question_id: string;
   code: string | null;
-  number: number | null;
+  title: string;
   label: string;
-  value: AnswerValue;
-  display_value: string | null;
+  step_id: string;
+  pillar_id: string | null;
+  answer: string | null;
+  points: number | null;
+  max_points: number;
+  percent: number | null;
+  pillar_weight: number | null;
+  ems_weight: number | null;
+  ems_points: number | null;
+  tier: "high" | "medium" | "low" | "unanswered";
+  interpretation: string | null;
+};
+export type ReportFinding = {
+  title: string;
+  text: string;
+  severity: "critical" | "high" | "moderate" | null;
+  source_question_ids: string[];
+};
+export type ReportOpportunity = {
+  number: number;
+  title: string;
+  text: string;
+  source_question_ids: string[];
+};
+export type ReportAnswerItem = {
+  question_id: string;
+  code: string | null;
+  label: string;
+  answer: string | null;
   source: ResponseSource | null;
   scored: boolean;
   points: number | null;
   max_points: number | null;
-  pillar_id: string | null;
+  pillar_code: string | null;
 };
-
-export type DiagnosticReport = {
-  diagnostic: DiagnosticSummary;
-  company: CompanySnapshot;
-  agent_name: string | null;
-  catalog_version: string;
+export type MaturityReport = {
+  diagnostic_id: string;
+  versions: {
+    diagnostic_version: string;
+    methodology_version: string;
+    report_version: string;
+    maturity_scale_version: string | null;
+  };
   generated_at: string;
-  steps: {
+  diagnostic: {
     id: string;
-    title: string;
-    availability: StepAvailability;
-    sections: { id: string; title: string; answers: ReportAnswer[] }[];
+    status: string;
+    started_at: string | null;
+    completed_at: string | null;
+    created_at: string;
+  };
+  company: CompanySnapshot;
+  contact: ReportPerson;
+  agent: ReportPerson;
+  identification: {
+    question_id: string;
+    code: string | null;
+    label: string;
+    value: string | null;
+    origin: ReportOrigin;
   }[];
-  pillars: (PillarScore & { code: string; name: string; ems_weight: number | null })[];
-  ems: EmsScore;
+  summary: {
+    overall_score: number;
+    overall_max: number;
+    overall_percent: number | null;
+    partial: boolean;
+    maturity_level: {
+      level: number;
+      name: string;
+      description: string;
+      interpretation: string | null;
+    } | null;
+    maturity_scale_defined: boolean;
+    headline: string;
+  };
+  axes: ReportAxis[];
+  pillars: ReportPillar[];
+  indicators: ReportIndicator[];
   alerts: DiagnosticAlert[];
-  maturity_level: string | null;
-  observations: string[];
-  recommendations: string[];
-  executive_summary: string | null;
+  strengths: ReportFinding[];
+  attention_points: ReportFinding[];
+  opportunities: ReportOpportunity[];
+  analysis: {
+    observed_data: string[];
+    calculated_indicators: string[];
+    interpretation: string[];
+    opportunities: string[];
+  };
+  conclusions: string[];
+  scope: {
+    complete: boolean;
+    evaluated_axes: string[];
+    pending_axes: string[];
+    text: string;
+  };
+  methodology: {
+    objective: string;
+    axes: { title: string; description: string | null }[];
+    pillars: { title: string; description: string | null }[];
+    scoring: string[];
+    results: string[];
+    maturity_scale: { title: string; description: string | null }[];
+    maturity_scale_note: string | null;
+  };
+  answers: {
+    step_id: string;
+    title: string;
+    status: "identification" | "evaluated" | "maintenance";
+    sections: { title: string; answers: ReportAnswerItem[] }[];
+  }[];
 };
 
 const BASE = "/dmc/diagnostics";
@@ -264,7 +387,16 @@ export const diagnosticsService = {
   complete(id: string) {
     return api.post<DiagnosticDetail>(`${BASE}/${id}/complete`, {}, { auth: true });
   },
+  /** Gera e persiste o relatório (reaproveita o já gerado). */
+  generateReport(id: string) {
+    return api.post<MaturityReport>(`${BASE}/${id}/report`, {}, { auth: true });
+  },
+  /** Relatório persistido (404 ``report_not_generated`` se ainda não gerado). */
   report(id: string) {
-    return api.get<DiagnosticReport>(`${BASE}/${id}/report`, { auth: true });
+    return api.get<MaturityReport>(`${BASE}/${id}/report`, { auth: true });
+  },
+  /** PDF gerado no servidor a partir do relatório persistido. */
+  reportPdf(id: string) {
+    return api.getArrayBuffer(`${BASE}/${id}/report/pdf`, { auth: true });
   },
 };

@@ -12,6 +12,7 @@ import { toast } from "sonner";
 
 import { AlertList } from "@/modules/diagnostics/components/alert-list";
 import { ConfirmDialog } from "@/modules/diagnostics/components/confirm-dialog";
+import { ReportActions } from "@/modules/diagnostics/components/report-actions";
 import { DiagnosticAxis, MaintenanceStep } from "@/modules/diagnostics/components/diagnostic-axis";
 import { ScoreIndicator } from "@/modules/diagnostics/components/diagnostic-summary";
 import {
@@ -568,17 +569,7 @@ function ReviewStep({
       <ScoreIndicator catalog={catalog} evaluation={detail.evaluation} />
 
       {completed ? (
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href={`/dashboard/diagnosticos/${detail.id}/relatorio` as Route}
-            className="inline-flex"
-          >
-            <Button size="lg">
-              <FileText aria-hidden />
-              Gerar relatório
-            </Button>
-          </Link>
-        </div>
+        <ReportActions detail={detail} />
       ) : canEdit ? (
         <Card className="rounded-xl border-primary/30">
           <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
