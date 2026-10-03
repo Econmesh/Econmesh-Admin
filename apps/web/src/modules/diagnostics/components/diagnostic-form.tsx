@@ -53,6 +53,27 @@ type PendingConfirmation = {
   hidden: DiagnosticQuestion[];
 };
 
+/**
+ * Diagnóstico concluído: etapas que estavam em manutenção na conclusão
+ * continuam em manutenção, mesmo que tenham sido ativadas depois.
+ */
+function catalogAsCompleted(
+  catalog: DiagnosticCatalog,
+  detail: DiagnosticDetail,
+): DiagnosticCatalog {
+  const maintenance = new Set(
+    detail.evaluation.steps
+      .filter((step) => step.status === "maintenance")
+      .map((step) => step.step_id),
+  );
+  return {
+    ...catalog,
+    steps: catalog.steps.map((step) =>
+      maintenance.has(step.id) ? { ...step, availability: "maintenance" } : step,
+    ),
+  };
+}
+
 function focusQuestion(questionId: string) {
   const field = document.getElementById(`question-${questionId}-field`);
   field?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -85,7 +106,9 @@ export function DiagnosticForm({ diagnosticId }: { diagnosticId: string }) {
           Object.entries(detailData.responses).map(([id, response]) => [id, response.value]),
         );
         const pending = detailData.can_edit ? readPendingAnswers(diagnosticId) : {};
-        setCatalog(catalogData);
+        setCatalog(
+          detailData.can_edit ? catalogData : catalogAsCompleted(catalogData, detailData),
+        );
         setDetail(detailData);
         setValues({ ...serverValues, ...pending });
         setLastSavedAt(new Date(detailData.updated_at));

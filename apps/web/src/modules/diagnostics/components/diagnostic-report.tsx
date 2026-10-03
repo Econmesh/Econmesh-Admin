@@ -104,10 +104,13 @@ export function DiagnosticReportView({ diagnosticId }: { diagnosticId: string })
           <CardTitle className="text-base">Pontuação</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {report.pillars.map((pillar) => (
               <div key={pillar.pillar_id} className="space-y-2 rounded-lg border p-4">
-                <p className="text-xs font-medium text-muted-foreground">{pillar.name}</p>
+                <p className="text-xs font-medium text-muted-foreground">
+                  {pillar.name}
+                  {pillar.ems_weight != null ? ` · ${pillar.ems_weight}% do EMS` : ""}
+                </p>
                 <p className="text-2xl font-semibold">
                   {pillar.points}
                   <span className="text-sm font-normal text-muted-foreground">

@@ -66,7 +66,13 @@ export type DiagnosticStep = {
   maintenance_message: string | null;
 };
 
-export type DiagnosticPillar = { id: string; code: string; name: string };
+export type DiagnosticPillar = {
+  id: string;
+  code: string;
+  name: string;
+  /** Peso do pilar no EMS (%), quando definido. */
+  ems_weight: number | null;
+};
 
 export type DiagnosticCatalog = {
   version: string;
@@ -198,7 +204,7 @@ export type DiagnosticReport = {
     availability: StepAvailability;
     sections: { id: string; title: string; answers: ReportAnswer[] }[];
   }[];
-  pillars: (PillarScore & { code: string; name: string })[];
+  pillars: (PillarScore & { code: string; name: string; ems_weight: number | null })[];
   ems: EmsScore;
   maturity_level: string | null;
   observations: string[];

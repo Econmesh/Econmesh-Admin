@@ -33,12 +33,15 @@ export function ScoreIndicator({
         </p>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {evaluation.pillars.map((pillar) => {
             const meta = pillarNames.get(pillar.pillar_id);
             return (
               <div key={pillar.pillar_id} className="space-y-2 rounded-lg border p-4">
-                <p className="text-xs font-medium text-muted-foreground">{meta?.name}</p>
+                <p className="text-xs font-medium text-muted-foreground">
+                  {meta?.name}
+                  {meta?.ems_weight != null ? ` · ${meta.ems_weight}% do EMS` : ""}
+                </p>
                 <p className="text-2xl font-semibold">
                   {pillar.points}
                   <span className="text-sm font-normal text-muted-foreground">
@@ -66,7 +69,7 @@ export function ScoreIndicator({
           <ProgressIndicator value={emsPercent} size="sm" />
           <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
             <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-            Os Eixos 2, 3 e 4 entram no cálculo quando forem disponibilizados. O nível de
+            Eixos em manutenção entram no cálculo quando forem disponibilizados. O nível de
             maturidade será apresentado no relatório final.
           </p>
         </div>
