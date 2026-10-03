@@ -4,6 +4,7 @@ import { Badge } from "@econmesh-admin/ui/components/badge";
 import { Button } from "@econmesh-admin/ui/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@econmesh-admin/ui/components/card";
 import { Input } from "@econmesh-admin/ui/components/input";
+import type { Route } from "next";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -45,7 +46,7 @@ export function DmcCompaniesView() {
             Carteira sob sua responsabilidade. A pesquisa não inclui a empresa na carteira.
           </p>
         </div>
-        <Link href="/dashboard/empresas/pre-cadastro" className="inline-flex">
+        <Link href={"/dashboard/empresas/pre-cadastro" as Route} className="inline-flex">
           <Button>
             <Plus className="size-4" aria-hidden />
             Pré-cadastro de empresa
@@ -171,11 +172,18 @@ export function DmcCompanyDetailView({ companyId }: { companyId: string }) {
           </div>
           <p className="text-sm text-muted-foreground">{company.trade_name}</p>
         </div>
-        {canEdit ? (
-          <Button type="button" variant="outline" onClick={() => setEditing(true)}>
-            Editar pré-cadastro
-          </Button>
-        ) : null}
+        <div className="flex flex-wrap gap-2">
+          {company.in_portfolio ? (
+            <Link href={`/dashboard/diagnosticos?empresa=${company.id}` as Route}>
+              <Button type="button">Diagnóstico de maturidade</Button>
+            </Link>
+          ) : null}
+          {canEdit ? (
+            <Button type="button" variant="outline" onClick={() => setEditing(true)}>
+              Editar pré-cadastro
+            </Button>
+          ) : null}
+        </div>
       </div>
       {isPreRegistered ? (
         <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">

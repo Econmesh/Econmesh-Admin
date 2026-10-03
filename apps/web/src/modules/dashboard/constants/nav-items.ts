@@ -1,6 +1,7 @@
 import {
   Bell,
   Building2,
+  ClipboardCheck,
   CreditCard,
   FileStack,
   FileText,
@@ -50,6 +51,13 @@ export const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     shortLabel: "Empresas",
     icon: Building2,
     roles: DMC_AND_ADMIN,
+  },
+  {
+    href: "/dashboard/diagnosticos" as Route,
+    label: "Diagnósticos",
+    shortLabel: "DMC",
+    icon: ClipboardCheck,
+    roles: ["dmc_agent"],
   },
   {
     href: "/dashboard/oportunidades",
@@ -130,6 +138,7 @@ export function isDmcPathAllowed(pathname: string): boolean {
   if (pathname === "/dashboard" || pathname === "/profile") return true;
   const allowed = [
     "/dashboard/empresas",
+    "/dashboard/diagnosticos",
     "/dashboard/oportunidades",
     "/dashboard/conversas",
     "/dashboard/suporte",
