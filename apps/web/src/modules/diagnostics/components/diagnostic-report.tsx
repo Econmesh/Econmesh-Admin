@@ -126,12 +126,15 @@ export function DiagnosticReportView({ diagnosticId }: { diagnosticId: string })
             ))}
           </div>
           <div className="rounded-lg border bg-muted/30 p-4">
-            <p className="text-xs font-medium text-muted-foreground">Pontuação geral (EMS parcial)</p>
+            <p className="text-xs font-medium text-muted-foreground">
+              Pontuação geral ({ems.max_available < 100 ? "EMS parcial" : "EMS"})
+            </p>
             <p className="text-2xl font-semibold">
               {points(ems.points)}
               <span className="text-sm font-normal text-muted-foreground">
                 {" "}
-                / {points(ems.max_available)} pts possíveis nos eixos disponíveis
+                / {points(ems.max_available)} pts
+                {ems.max_available < 100 ? " possíveis nos eixos disponíveis" : ""}
               </span>
             </p>
           </div>
@@ -141,8 +144,8 @@ export function DiagnosticReportView({ diagnosticId }: { diagnosticId: string })
               <Badge>{report.maturity_level}</Badge>
             ) : (
               <span className="text-muted-foreground">
-                será apresentado quando a régua de maturidade e os demais eixos forem
-                disponibilizados.
+                será apresentado quando a régua de maturidade (faixas de pontuação) for
+                definida.
               </span>
             )}
           </div>

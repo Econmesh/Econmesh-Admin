@@ -24,6 +24,8 @@ export function ScoreIndicator({
     evaluation.ems.max_available > 0
       ? (evaluation.ems.points * 100) / evaluation.ems.max_available
       : 0;
+  // Diagnósticos concluídos antes da ativação de todos os eixos têm EMS parcial.
+  const partial = evaluation.ems.max_available < 100;
   return (
     <Card className="rounded-xl">
       <CardHeader>
@@ -58,19 +60,24 @@ export function ScoreIndicator({
           })}
         </div>
         <div className="space-y-2 rounded-lg border bg-muted/30 p-4">
-          <p className="text-xs font-medium text-muted-foreground">EMS parcial</p>
+          <p className="text-xs font-medium text-muted-foreground">
+            {partial ? "EMS parcial" : "EMS"}
+          </p>
           <p className="text-2xl font-semibold">
             {formatPoints(evaluation.ems.points)}
             <span className="text-sm font-normal text-muted-foreground">
               {" "}
-              / {formatPoints(evaluation.ems.max_available)} pts possíveis nos eixos disponíveis
+              / {formatPoints(evaluation.ems.max_available)} pts
+              {partial ? " possíveis nos eixos disponíveis" : ""}
             </span>
           </p>
           <ProgressIndicator value={emsPercent} size="sm" />
           <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
             <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-            Eixos em manutenção entram no cálculo quando forem disponibilizados. O nível de
-            maturidade será apresentado no relatório final.
+            {partial
+              ? "Eixos em manutenção não entram no cálculo. "
+              : "Pontuação ponderada pelos pesos de cada indicador no EMS. "}
+            O nível de maturidade será apresentado no relatório final.
           </p>
         </div>
       </CardContent>
