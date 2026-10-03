@@ -25,6 +25,31 @@ export type DmcDashboard = {
   recent_tickets: DmcTicket[];
 };
 
+export type DmcRegistrationStatus = "pre_registered" | "complete";
+
+export type DmcCompanyAddress = {
+  postal_code: string | null;
+  street: string | null;
+  number: string | null;
+  complement: string | null;
+  neighborhood: string | null;
+  city: string | null;
+  state: string | null;
+};
+
+export type DmcPreRegistrationPayload = {
+  legal_name: string;
+  trade_name: string | null;
+  tax_id: string;
+  email: string | null;
+  phone: string | null;
+  legal_representative: string | null;
+  sector: string | null;
+  website: string | null;
+  description: string | null;
+  address: DmcCompanyAddress | null;
+};
+
 export type DmcCompany = {
   id: string;
   legal_name: string;
@@ -34,6 +59,8 @@ export type DmcCompany = {
   state: string | null;
   sector: string | null;
   in_portfolio: boolean;
+  registration_status?: DmcRegistrationStatus;
+  address?: DmcCompanyAddress | null;
   email?: string | null;
   phone?: string | null;
   website?: string | null;
@@ -167,6 +194,14 @@ export const dmcAgentService = {
   },
   company(id: string) {
     return api.get<DmcCompany>(`/dmc/companies/${id}`, { auth: true });
+  },
+  preRegisterCompany(payload: DmcPreRegistrationPayload) {
+    return api.post<DmcCompany>("/dmc/companies/pre-registrations", payload, { auth: true });
+  },
+  updatePreRegistration(id: string, payload: Partial<DmcPreRegistrationPayload>) {
+    return api.patch<DmcCompany>(`/dmc/companies/${id}/pre-registration`, payload, {
+      auth: true,
+    });
   },
   companyUsers(id: string) {
     return api.get<DmcCompanyUser[]>(`/dmc/companies/${id}/users`, { auth: true });
