@@ -4,6 +4,7 @@ import { Badge } from "@econmesh-admin/ui/components/badge";
 import { cn } from "@econmesh-admin/ui/lib/utils";
 import { Database, Lock, PencilLine, Target } from "lucide-react";
 
+import { AlertBanner } from "@/modules/diagnostics/components/alert-list";
 import { displayAnswer, QuestionInput } from "@/modules/diagnostics/components/question-input";
 import { questionLabel } from "@/modules/diagnostics/lib/rules";
 import type {
@@ -151,6 +152,20 @@ export function DiagnosticQuestionField({
           onChange={onChange}
         />
       )}
+
+      {question.options
+        .filter(
+          (option) =>
+            option.alert_level &&
+            (Array.isArray(value) ? value.includes(option.value) : value === option.value),
+        )
+        .map((option) => (
+          <AlertBanner
+            key={option.value}
+            level={option.alert_level!}
+            message={option.alert_message ?? option.label}
+          />
+        ))}
 
       {showOrigin && origin === "adjusted" && response?.registry_value ? (
         <p className="text-xs text-muted-foreground">

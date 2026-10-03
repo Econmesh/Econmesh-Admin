@@ -9,6 +9,7 @@ import type { Route } from "next";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { AlertList } from "@/modules/diagnostics/components/alert-list";
 import { ProgressIndicator } from "@/modules/diagnostics/components/progress-indicator";
 import { formatCnpj, formatDateTime } from "@/modules/diagnostics/lib/rules";
 import { diagnosticsService, type DiagnosticReport } from "@/services/dmc/diagnostics.service";
@@ -99,12 +100,14 @@ export function DiagnosticReportView({ diagnosticId }: { diagnosticId: string })
         </dl>
       </header>
 
+      <AlertList alerts={report.alerts ?? []} title="Alertas de risco" />
+
       <Card className="rounded-xl">
         <CardHeader>
           <CardTitle className="text-base">Pontuação</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             {report.pillars.map((pillar) => (
               <div key={pillar.pillar_id} className="space-y-2 rounded-lg border p-4">
                 <p className="text-xs font-medium text-muted-foreground">

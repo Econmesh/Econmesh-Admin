@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { AlertList } from "@/modules/diagnostics/components/alert-list";
 import { ConfirmDialog } from "@/modules/diagnostics/components/confirm-dialog";
 import { DiagnosticAxis, MaintenanceStep } from "@/modules/diagnostics/components/diagnostic-axis";
 import { ScoreIndicator } from "@/modules/diagnostics/components/diagnostic-summary";
@@ -561,6 +562,8 @@ function ReviewStep({
             })}
         </CardContent>
       </Card>
+
+      <AlertList alerts={detail.evaluation.alerts ?? []} title="Alertas de risco" />
 
       <ScoreIndicator catalog={catalog} evaluation={detail.evaluation} />
 

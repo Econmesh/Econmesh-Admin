@@ -16,7 +16,20 @@ export type QuestionType =
   | "multi_choice";
 export type ConditionOperator = "in" | "contains_any";
 
-export type DiagnosticOption = { value: string; label: string; points: number | null };
+export type DiagnosticOption = {
+  value: string;
+  label: string;
+  points: number | null;
+  /** Alerta disparado quando a opção é escolhida (ex.: risco crítico). */
+  alert_level: "critical" | "warning" | null;
+  alert_message: string | null;
+};
+
+export type DiagnosticAlert = {
+  question_id: string;
+  level: "critical" | "warning";
+  message: string;
+};
 export type DiagnosticCondition = {
   question_id: string;
   operator: ConditionOperator;
@@ -127,6 +140,7 @@ export type DiagnosticEvaluation = {
   ems: EmsScore;
   complete: boolean;
   visible_question_ids: string[];
+  alerts?: DiagnosticAlert[];
 };
 
 export type CompanySnapshot = {
@@ -206,6 +220,7 @@ export type DiagnosticReport = {
   }[];
   pillars: (PillarScore & { code: string; name: string; ems_weight: number | null })[];
   ems: EmsScore;
+  alerts: DiagnosticAlert[];
   maturity_level: string | null;
   observations: string[];
   recommendations: string[];
