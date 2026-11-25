@@ -6,8 +6,7 @@ import { Textarea } from "@econmesh-admin/ui/components/textarea";
 import { Check, Package, Pencil, Plus, Recycle, Trash2, X } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
-import { ItemStatusBadge } from "@/modules/diagnostics/components/item-accordion";
-import { questionLabel, type LocalStepProgress } from "@/modules/diagnostics/lib/rules";
+import { questionLabel } from "@/modules/diagnostics/lib/rules";
 import type {
   DiagnosticItem,
   DiagnosticItemKindMeta,
@@ -24,7 +23,6 @@ export function ItemListField({
   question,
   meta,
   items,
-  progress,
   error,
   readOnly,
   onAdd,
@@ -34,7 +32,6 @@ export function ItemListField({
   question: DiagnosticQuestion;
   meta: DiagnosticItemKindMeta;
   items: DiagnosticItem[];
-  progress: Map<string, LocalStepProgress>;
   error?: string;
   readOnly?: boolean;
   /** Retorna a mensagem de erro (ex.: nome duplicado) ou ``null`` em caso de sucesso. */
@@ -164,7 +161,6 @@ export function ItemListField({
                       </p>
                     ) : null}
                   </div>
-                  <ItemStatusBadge progress={progress.get(item.id)} />
                   {!readOnly ? (
                     <div className="flex gap-1">
                       <Button

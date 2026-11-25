@@ -146,7 +146,6 @@ export function DiagnosticAxis({
                       question={question}
                       meta={meta}
                       items={itemsOf(items, meta.kind)}
-                      progress={itemActions.progress}
                       error={errors[question.id]}
                       readOnly={readOnly}
                       onAdd={(draft) => itemActions.onAdd(meta.kind, draft)}
