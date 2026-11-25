@@ -91,7 +91,7 @@ export function PillarChart({ pillars }: { pillars: ReportPillar[] }) {
   const data = pillars.map((pillar) => ({
     name: pillar.name.split("—").pop()?.trim() || pillar.code,
     value: pillar.percent ?? 0,
-    detail: `${pillar.points} de ${pillar.max_points} pontos`,
+    detail: `${formatNumber(pillar.points, 2)} de ${pillar.max_points} pontos`,
   }));
   return <HorizontalBars data={data} ariaLabel="Pontuação por pilar de cálculo" />;
 }

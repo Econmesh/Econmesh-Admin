@@ -26,6 +26,7 @@ export function ScoreIndicator({
       : 0;
   // Diagnósticos concluídos antes da ativação de todos os eixos têm EMS parcial.
   const partial = evaluation.ems.max_available < 100;
+  const worst = evaluation.worst_case;
   return (
     <Card className="rounded-xl">
       <CardHeader>
@@ -45,7 +46,7 @@ export function ScoreIndicator({
                   {meta?.ems_weight != null ? ` · ${meta.ems_weight}% do EMS` : ""}
                 </p>
                 <p className="text-2xl font-semibold">
-                  {pillar.points}
+                  {formatPoints(pillar.points)}
                   <span className="text-sm font-normal text-muted-foreground">
                     {" "}
                     / {pillar.max_points} pts
@@ -72,6 +73,15 @@ export function ScoreIndicator({
             </span>
           </p>
           <ProgressIndicator value={emsPercent} size="sm" />
+          {worst && Math.abs(worst.ems.points - evaluation.ems.points) >= 0.01 ? (
+            <p className="text-xs text-muted-foreground">
+              Pior caso entre produtos/resíduos:{" "}
+              <span className="font-medium text-foreground">
+                {formatPoints(worst.ems.points)} / {formatPoints(worst.ems.max_available)} pts
+              </span>{" "}
+              — o score considera a média dos itens.
+            </p>
+          ) : null}
           <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
             <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
             {partial

@@ -19,6 +19,7 @@ import {
   ConclusionSection,
   ExecutiveSummary,
   IndicatorsSection,
+  ItemsSection,
   MethodologySection,
   OpportunitiesSection,
   OverviewSection,
@@ -44,6 +45,7 @@ type State =
 const SECTIONS = [
   ["executivo", "Resumo Executivo"],
   ["visao-geral", "Visão Geral da Maturidade"],
+  ["produtos-residuos", "Produtos e Resíduos"],
   ["pilares", "Resultados por Pilar"],
   ["indicadores", "Indicadores Avaliados"],
   ["destaques", "Pontos de Destaque"],
@@ -210,6 +212,9 @@ export function DiagnosticReportView({ diagnosticId }: { diagnosticId: string })
             </ReportSection>
             <ReportSection id="visao-geral" number={next()} title="Visão Geral da Maturidade Circular">
               <OverviewSection report={r} />
+            </ReportSection>
+            <ReportSection id="produtos-residuos" number={next()} title="Produtos e Resíduos">
+              <ItemsSection report={r} />
             </ReportSection>
             <ReportSection id="pilares" number={next()} title="Resultados por Pilar">
               <PillarsSection report={r} />

@@ -13,7 +13,12 @@ import { toast } from "sonner";
 import { AlertList } from "@/modules/diagnostics/components/alert-list";
 import { ConfirmDialog } from "@/modules/diagnostics/components/confirm-dialog";
 import { ReportActions } from "@/modules/diagnostics/components/report-actions";
-import { DiagnosticAxis, MaintenanceStep } from "@/modules/diagnostics/components/diagnostic-axis";
+import {
+  DiagnosticAxis,
+  MaintenanceStep,
+  type ItemActions,
+} from "@/modules/diagnostics/components/diagnostic-axis";
+import type { ItemDraft } from "@/modules/diagnostics/components/item-list-field";
 import { ScoreIndicator } from "@/modules/diagnostics/components/diagnostic-summary";
 import {
   DiagnosticStepper,
@@ -29,20 +34,25 @@ import {
   answersHiddenByChange,
   formatCnpj,
   formatDateTime,
-  isAnswered,
+  isInstanceAnswered,
+  itemProgress,
   overallProgress,
+  questionInstances,
   questionLabel,
+  splitKey,
   STATUS_LABELS,
   stepProgress,
-  visibleQuestionIds,
+  visibleKeys,
   type AnswerMap,
+  type QuestionInstance,
 } from "@/modules/diagnostics/lib/rules";
 import {
   diagnosticsService,
   type AnswerValue,
   type DiagnosticCatalog,
   type DiagnosticDetail,
-  type DiagnosticQuestion,
+  type DiagnosticItem,
+  type ItemKind,
 } from "@/services/dmc/diagnostics.service";
 import { ApiError } from "@/utils/errors";
 
@@ -50,10 +60,20 @@ const REVIEW_STEP = "review";
 const REQUIRED_MESSAGE = "Campo obrigatório.";
 
 type PendingConfirmation = {
-  questionId: string;
+  key: string;
   value: AnswerValue;
-  hidden: DiagnosticQuestion[];
+  hidden: QuestionInstance[];
 };
+
+const NO_ITEMS: DiagnosticItem[] = [];
+
+function itemErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError) {
+    const errors = (error.details?.errors ?? {}) as Record<string, string>;
+    return errors.name ?? error.message ?? fallback;
+  }
+  return fallback;
+}
 
 /**
  * Diagnóstico concluído: etapas que estavam em manutenção na conclusão
@@ -76,11 +96,14 @@ function catalogAsCompleted(
   };
 }
 
-function focusQuestion(questionId: string) {
-  const field = document.getElementById(`question-${questionId}-field`);
-  field?.scrollIntoView({ behavior: "smooth", block: "center" });
-  const input = field?.querySelector<HTMLElement>("input, textarea, select");
-  input?.focus({ preventScroll: true });
+function focusQuestion(key: string) {
+  // Aguarda a sanfona do item abrir antes de rolar até o campo.
+  window.setTimeout(() => {
+    const field = document.getElementById(`question-${key}-field`);
+    field?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const input = field?.querySelector<HTMLElement>("input, textarea, select");
+    input?.focus({ preventScroll: true });
+  }, 80);
 }
 
 export function DiagnosticForm({ diagnosticId }: { diagnosticId: string }) {
@@ -90,6 +113,7 @@ export function DiagnosticForm({ diagnosticId }: { diagnosticId: string }) {
   const [activeStep, setActiveStep] = useState<string>("");
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
   const [confirmation, setConfirmation] = useState<PendingConfirmation | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<DiagnosticItem | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [advancing, setAdvancing] = useState(false);
   const [completing, setCompleting] = useState(false);
@@ -139,17 +163,23 @@ export function DiagnosticForm({ diagnosticId }: { diagnosticId: string }) {
         .sort((a, b) => a.order - b.order),
     [catalog],
   );
+  const items = detail?.items ?? NO_ITEMS;
+  const itemNames = useMemo(() => new Map(items.map((item) => [item.id, item.name])), [items]);
   const visible = useMemo(
-    () => (catalog ? visibleQuestionIds(catalog, values) : new Set<string>()),
-    [catalog, values],
+    () => (catalog ? visibleKeys(catalog, values, items) : new Set<string>()),
+    [catalog, values, items],
   );
   const progressByStep = useMemo(() => {
     if (!catalog) return new Map<string, ReturnType<typeof stepProgress>>();
     return new Map(
-      catalog.steps.map((step) => [step.id, stepProgress(catalog, step, values, visible)]),
+      catalog.steps.map((step) => [step.id, stepProgress(catalog, step, values, items, visible)]),
     );
-  }, [catalog, values, visible]);
-  const overall = catalog ? overallProgress(catalog, values) : 0;
+  }, [catalog, values, items, visible]);
+  const progressByItem = useMemo(
+    () => (catalog ? itemProgress(catalog, values, items, visible) : new Map()),
+    [catalog, values, items, visible],
+  );
+  const overall = catalog ? overallProgress(catalog, values, items) : 0;
   const allComplete = availableSteps.every(
     (step) => (progressByStep.get(step.id)?.missing.length ?? 1) === 0,
   );
@@ -157,7 +187,7 @@ export function DiagnosticForm({ diagnosticId }: { diagnosticId: string }) {
 
   const stepperItems: StepperItem[] = useMemo(() => {
     if (!catalog) return [];
-    const items: StepperItem[] = [...catalog.steps]
+    const entries: StepperItem[] = [...catalog.steps]
       .sort((a, b) => a.order - b.order)
       .map((step) => {
         const progress = progressByStep.get(step.id);
@@ -165,8 +195,11 @@ export function DiagnosticForm({ diagnosticId }: { diagnosticId: string }) {
         if (step.availability !== "available") status = "maintenance";
         else if (progress && progress.missing.length === 0) status = "completed";
         else if (
-          catalog.questions.some(
-            (q) => q.step_id === step.id && !q.read_only && isAnswered(values[q.id]),
+          questionInstances(catalog, items).some(
+            (instance) =>
+              instance.question.step_id === step.id &&
+              !instance.question.read_only &&
+              isInstanceAnswered(instance, values, items),
           )
         )
           status = "in_progress";
@@ -179,7 +212,7 @@ export function DiagnosticForm({ diagnosticId }: { diagnosticId: string }) {
           percent: progress?.percent,
         };
       });
-    items.push({
+    entries.push({
       id: REVIEW_STEP,
       order: catalog.steps.length + 1,
       title: "Revisão e conclusão",
@@ -187,8 +220,8 @@ export function DiagnosticForm({ diagnosticId }: { diagnosticId: string }) {
       status:
         detail?.status === "completed" ? "completed" : allComplete ? "in_progress" : "locked",
     });
-    return items;
-  }, [catalog, progressByStep, values, allComplete, detail?.status]);
+    return entries;
+  }, [catalog, progressByStep, values, items, allComplete, detail?.status]);
 
   const applyChange = useCallback(
     (changes: Record<string, AnswerValue>) => {
@@ -205,15 +238,78 @@ export function DiagnosticForm({ diagnosticId }: { diagnosticId: string }) {
     [autosave],
   );
 
-  function handleChange(questionId: string, value: AnswerValue) {
+  function handleChange(key: string, value: AnswerValue) {
     if (!catalog || !canEdit) return;
-    const hidden = answersHiddenByChange(catalog, values, questionId, value);
+    const hidden = answersHiddenByChange(catalog, values, items, key, value);
     if (hidden.length > 0) {
-      setConfirmation({ questionId, value, hidden });
+      setConfirmation({ key, value, hidden });
       return;
     }
-    applyChange({ [questionId]: value });
+    applyChange({ [key]: value });
   }
+
+  /* ------------------------------------------- produtos (1.1) e resíduos (1.7) */
+  async function handleAddItem(kind: ItemKind, draft: ItemDraft): Promise<string | null> {
+    if (!detail || !canEdit) return null;
+    try {
+      const updated = await diagnosticsService.addItem(detail.id, {
+        kind,
+        name: draft.name.trim(),
+        description: draft.description.trim() || null,
+      });
+      setDetail(updated);
+      setLocalErrors((prev) => {
+        const next = { ...prev };
+        for (const meta of catalog?.item_kinds ?? []) delete next[meta.list_question_id];
+        return next;
+      });
+      return null;
+    } catch (error) {
+      return itemErrorMessage(error, "Não foi possível adicionar.");
+    }
+  }
+
+  async function handleUpdateItem(itemId: string, draft: ItemDraft): Promise<string | null> {
+    if (!detail || !canEdit) return null;
+    try {
+      setDetail(
+        await diagnosticsService.updateItem(detail.id, itemId, {
+          name: draft.name.trim(),
+          description: draft.description.trim() || null,
+        }),
+      );
+      return null;
+    } catch (error) {
+      return itemErrorMessage(error, "Não foi possível salvar.");
+    }
+  }
+
+  async function confirmDeleteItem(item: DiagnosticItem) {
+    if (!detail) return;
+    const belongs = (key: string) => splitKey(key).itemId === item.id;
+    // Respostas pendentes do item não devem ser reenviadas depois da exclusão.
+    autosave.discardAnswers(belongs);
+    try {
+      const updated = await diagnosticsService.deleteItem(detail.id, item.id);
+      setDetail(updated);
+      setValues((prev) =>
+        Object.fromEntries(Object.entries(prev).filter(([key]) => !belongs(key))),
+      );
+      setLocalErrors((prev) =>
+        Object.fromEntries(Object.entries(prev).filter(([key]) => !belongs(key))),
+      );
+      toast.success(`“${item.name}” excluído com as respostas vinculadas.`);
+    } catch (error) {
+      toast.error(itemErrorMessage(error, "Não foi possível excluir."));
+    }
+  }
+
+  const itemActions: ItemActions = {
+    progress: progressByItem,
+    onAdd: handleAddItem,
+    onUpdate: handleUpdateItem,
+    onDelete: (item) => setItemToDelete(item),
+  };
 
   function goTo(stepId: string) {
     const item = stepperItems.find((entry) => entry.id === stepId);
@@ -400,10 +496,13 @@ export function DiagnosticForm({ diagnosticId }: { diagnosticId: string }) {
               values={values}
               visible={visible}
               responses={detail.responses}
+              items={items}
+              itemActions={itemActions}
               progress={progressByStep.get(step.id)!}
               errors={errors}
               readOnly={!canEdit}
               onChange={handleChange}
+              onGoTo={goTo}
             />
           ) : null}
 
@@ -461,14 +560,14 @@ export function DiagnosticForm({ diagnosticId }: { diagnosticId: string }) {
         confirmLabel="Apagar respostas"
         cancelLabel="Manter guardadas"
         onCancel={() => {
-          if (confirmation) applyChange({ [confirmation.questionId]: confirmation.value });
+          if (confirmation) applyChange({ [confirmation.key]: confirmation.value });
           setConfirmation(null);
         }}
         onConfirm={() => {
           if (confirmation) {
             applyChange({
-              [confirmation.questionId]: confirmation.value,
-              ...Object.fromEntries(confirmation.hidden.map((question) => [question.id, null])),
+              [confirmation.key]: confirmation.value,
+              ...Object.fromEntries(confirmation.hidden.map((instance) => [instance.key, null])),
             });
           }
           setConfirmation(null);
@@ -476,14 +575,39 @@ export function DiagnosticForm({ diagnosticId }: { diagnosticId: string }) {
       >
         <p>Com esta resposta, as perguntas abaixo não se aplicam mais:</p>
         <ul className="list-disc pl-5 text-foreground">
-          {confirmation?.hidden.map((question) => (
-            <li key={question.id}>{questionLabel(question)}</li>
+          {confirmation?.hidden.map((instance) => (
+            <li key={instance.key}>
+              {questionLabel(instance.question)}
+              {instance.itemId ? ` (${itemNames.get(instance.itemId) ?? "item"})` : ""}
+            </li>
           ))}
         </ul>
         <p>
           Deseja apagar as respostas já preenchidas? Se mantiver, elas ficam guardadas, mas não são
           consideradas no progresso nem no resultado.
         </p>
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        open={itemToDelete !== null}
+        title={`Excluir “${itemToDelete?.name ?? ""}”?`}
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        onCancel={() => setItemToDelete(null)}
+        onConfirm={() => {
+          const item = itemToDelete;
+          setItemToDelete(null);
+          if (item) void confirmDeleteItem(item);
+        }}
+      >
+        <p>
+          Todas as respostas vinculadas a este{" "}
+          {itemToDelete?.kind === "waste" ? "resíduo" : "produto"} serão apagadas em todos os eixos
+          {itemToDelete?.kind === "waste"
+            ? " (Mapeamento de resíduos, reflexo no Licenciamento e Custos de gestão)."
+            : " (Mapeamento de produção e Destinação e mercado de resíduos)."}
+        </p>
+        <p>Esta ação não pode ser desfeita.</p>
       </ConfirmDialog>
     </div>
   );

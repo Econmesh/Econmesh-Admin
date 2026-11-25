@@ -6,7 +6,9 @@ import {
   ChevronDown,
   Database,
   Lightbulb,
+  Package,
   PencilLine,
+  Recycle,
   ShieldAlert,
   Wrench,
 } from "lucide-react";
@@ -21,6 +23,7 @@ import type {
   ReportAxis,
   ReportFinding,
   ReportIndicator,
+  ReportItem,
   ReportOpportunity,
   ReportPillar,
 } from "@/services/dmc/diagnostics.service";
@@ -194,6 +197,16 @@ export function ExecutiveSummary({ report }: { report: MaturityReport }) {
               Score parcial: nem todos os eixos foram avaliados.
             </p>
           ) : null}
+          {summary.worst_case_score != null &&
+          Math.abs(summary.worst_case_score - summary.overall_score) >= 0.01 ? (
+            <p className="text-sm text-[var(--rb-muted)]">
+              Pior caso entre produtos/resíduos:{" "}
+              <span className="font-semibold text-[var(--rb-ink)]">
+                {formatNumber(summary.worst_case_score, 2)} de {formatNumber(summary.overall_max, 2)}
+              </span>{" "}
+              pontos. O score geral considera a média dos itens.
+            </p>
+          ) : null}
         </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -318,7 +331,9 @@ export function PillarScoreCard({ pillar }: { pillar: ReportPillar }) {
           ) : null}
         </div>
         <p className="shrink-0 text-right">
-          <span className="text-2xl font-bold text-[var(--rb-green)]">{pillar.points}</span>
+          <span className="text-2xl font-bold text-[var(--rb-green)]">
+            {formatNumber(pillar.points, 2)}
+          </span>
           <span className="text-sm text-[var(--rb-muted)]"> / {pillar.max_points}</span>
         </p>
       </div>
@@ -328,6 +343,12 @@ export function PillarScoreCard({ pillar }: { pillar: ReportPillar }) {
         {formatNumber(pillar.ems_points, 2)} de {formatNumber(pillar.ems_max, 2)} pts no EMS ·{" "}
         {pillar.answered} de {pillar.total} indicadores respondidos
       </p>
+      {pillar.worst_points != null && Math.abs(pillar.worst_points - pillar.points) >= 0.01 ? (
+        <p className="text-xs text-[var(--rb-muted)]">
+          Pior caso entre itens: {formatNumber(pillar.worst_points, 2)} pts ·{" "}
+          {formatNumber(pillar.worst_ems_points, 2)} no EMS
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -369,17 +390,41 @@ export function IndicatorCard({ indicator }: { indicator: ReportIndicator }) {
         </div>
         <div className="shrink-0 text-right">
           <p className="text-lg font-bold">
-            {indicator.points ?? "—"}
+            {indicator.points == null ? "—" : formatNumber(indicator.points, 2)}
             <span className="text-sm font-normal text-[var(--rb-muted)]">/{indicator.max_points}</span>
           </p>
           <p className={`text-xs font-semibold ${tier.className}`}>{tier.label}</p>
         </div>
       </div>
       <ProgressBar value={indicator.percent} label={`${indicator.title}: pontuação`} />
-      <p className="text-sm">
-        <span className="text-[var(--rb-muted)]">Resposta: </span>
-        <span className="font-semibold">{indicator.answer ?? "Não respondida"}</span>
-      </p>
+      {indicator.per_item && indicator.items && indicator.items.length > 0 ? (
+        <div className="space-y-1">
+          <ul className="divide-y divide-[var(--rb-border)] rounded-md border border-[var(--rb-border)] text-sm">
+            {indicator.items.map((row) => (
+              <li key={row.item_id} className="flex items-center justify-between gap-3 px-3 py-1.5">
+                <span className="min-w-0 truncate text-[var(--rb-muted)]">{row.item_name}</span>
+                <span className="shrink-0 font-semibold">
+                  {row.answer ?? "Não respondida"}
+                  <span className={`ml-2 text-xs ${TIER[row.tier].className}`}>
+                    {row.points ?? "—"}/{indicator.max_points}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          {indicator.items.length > 1 ? (
+            <p className="text-xs text-[var(--rb-muted)]">
+              Média dos itens: {formatNumber(indicator.points, 2)} · pior caso:{" "}
+              {indicator.worst_points ?? "—"}
+            </p>
+          ) : null}
+        </div>
+      ) : (
+        <p className="text-sm">
+          <span className="text-[var(--rb-muted)]">Resposta: </span>
+          <span className="font-semibold">{indicator.answer ?? "Não respondida"}</span>
+        </p>
+      )}
       {indicator.interpretation ? <p className="text-sm">{indicator.interpretation}</p> : null}
       <p className="text-xs text-[var(--rb-muted)]">
         Peso no pilar: {formatNumber(indicator.pillar_weight)}% · Peso no EMS:{" "}
@@ -633,6 +678,108 @@ export function CompanySection({ report }: { report: MaturityReport }) {
   );
 }
 
+/* --------------------------------------------------- produtos e resíduos */
+function ItemCard({ item }: { item: ReportItem }) {
+  const Icon = item.kind === "product" ? Package : Recycle;
+  return (
+    <details className="group rounded-lg border border-[var(--rb-border)] bg-white open:shadow-sm">
+      <summary className="flex cursor-pointer list-none items-start justify-between gap-3 px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--rb-green)]">
+        <span className="flex min-w-0 items-start gap-3">
+          <Icon className="mt-0.5 size-5 shrink-0 text-[var(--rb-green)]" aria-hidden />
+          <span className="min-w-0">
+            <span className="block text-xs uppercase tracking-wide text-[var(--rb-muted)]">
+              {item.kind_label}
+            </span>
+            <span className="block font-semibold">{item.name}</span>
+            {item.description ? (
+              <span className="block whitespace-pre-line text-sm text-[var(--rb-muted)]">
+                {item.description}
+              </span>
+            ) : null}
+          </span>
+        </span>
+        <span className="flex shrink-0 items-center gap-2 text-xs font-medium text-[var(--rb-muted)]">
+          {item.max_points > 0 ? (
+            <span className="font-semibold text-[var(--rb-green)]">
+              {item.points}/{item.max_points} pts
+            </span>
+          ) : null}
+          <ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden />
+        </span>
+      </summary>
+      <div className="space-y-4 border-t border-[var(--rb-border)] px-4 py-4">
+        {item.sections.length === 0 ? (
+          <p className="text-sm text-[var(--rb-muted)]">Sem respostas registradas.</p>
+        ) : (
+          item.sections.map((section) => (
+            <div key={section.title}>
+              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--rb-green)]">
+                {section.title}
+              </h4>
+              <dl className="divide-y divide-[var(--rb-border)]">
+                {section.answers.map((answer) => (
+                  <div
+                    key={answer.question_id}
+                    className="grid gap-1 py-2 text-sm sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] sm:gap-4"
+                  >
+                    <dt className="text-[var(--rb-muted)]">
+                      {answer.code ? <span className="mr-1.5 text-xs">{answer.code}</span> : null}
+                      {answer.label}
+                    </dt>
+                    <dd className="font-medium">
+                      {answer.answer ?? "—"}
+                      {answer.scored ? (
+                        <span className="ml-2 whitespace-nowrap text-xs font-semibold text-[var(--rb-green)]">
+                          {answer.points ?? "—"}/{answer.max_points} pts
+                          {answer.pillar_code ? ` · ${answer.pillar_code}` : ""}
+                        </span>
+                      ) : null}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          ))
+        )}
+      </div>
+    </details>
+  );
+}
+
+export function ItemsSection({ report }: { report: MaturityReport }) {
+  const groups = [
+    ["Produtos", "Mapeamento de produção e Destinação e mercado de resíduos, por produto.", report.products ?? []],
+    [
+      "Resíduos",
+      "Mapeamento, licenciamento e rastreabilidade e custos de gestão, por resíduo.",
+      report.wastes ?? [],
+    ],
+  ] as const;
+  return (
+    <div className="space-y-6">
+      {groups.map(([title, subtitle, entries]) => (
+        <div key={title} className="space-y-3">
+          <div>
+            <h3 className="font-semibold">
+              {title} cadastrados <span className="text-[var(--rb-muted)]">({entries.length})</span>
+            </h3>
+            <p className="text-xs text-[var(--rb-muted)]">{subtitle}</p>
+          </div>
+          {entries.length > 0 ? (
+            <div className="space-y-2">
+              {entries.map((item) => (
+                <ItemCard key={item.id} item={item} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-[var(--rb-muted)]">Nenhum registro.</p>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------ respostas */
 export function AnswersSection({ report }: { report: MaturityReport }) {
   return (
@@ -654,7 +801,7 @@ export function AnswersSection({ report }: { report: MaturityReport }) {
               <p className="text-sm text-[var(--rb-muted)]">Eixo não avaliado neste diagnóstico.</p>
             ) : (
               step.sections.map((section) => (
-                <div key={section.title}>
+                <div key={`${section.title}-${section.item_id ?? ""}`}>
                   <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--rb-green)]">
                     {section.title}
                   </h4>
@@ -669,7 +816,8 @@ export function AnswersSection({ report }: { report: MaturityReport }) {
                           {answer.answer ?? "—"}
                           {answer.scored ? (
                             <span className="ml-2 whitespace-nowrap text-xs font-semibold text-[var(--rb-green)]">
-                              {answer.points ?? "—"}/{answer.max_points} pts
+                              {answer.points == null ? "—" : formatNumber(answer.points, 2)}/
+                              {answer.max_points} pts
                               {answer.pillar_code ? ` · ${answer.pillar_code}` : ""}
                             </span>
                           ) : null}

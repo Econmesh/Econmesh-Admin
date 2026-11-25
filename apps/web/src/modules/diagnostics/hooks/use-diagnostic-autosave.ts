@@ -174,6 +174,28 @@ export function useDiagnosticAutosave(
     [diagnosticId, schedule],
   );
 
+  /** Remove da fila respostas que não devem mais ser enviadas (ex.: item excluído). */
+  const discardAnswers = useCallback(
+    (predicate: (key: string) => boolean) => {
+      let changed = false;
+      for (const key of Object.keys(pendingRef.current.answers)) {
+        if (predicate(key)) {
+          delete pendingRef.current.answers[key];
+          changed = true;
+        }
+      }
+      if (changed) writeStore(diagnosticId, pendingRef.current);
+      setFieldErrors((prev) => {
+        const keys = Object.keys(prev).filter(predicate);
+        if (keys.length === 0) return prev;
+        const next = { ...prev };
+        for (const key of keys) delete next[key];
+        return next;
+      });
+    },
+    [diagnosticId],
+  );
+
   const queueStep = useCallback(
     (stepId: string) => {
       pendingRef.current.step = stepId;
@@ -231,5 +253,14 @@ export function useDiagnosticAutosave(
     [],
   );
 
-  return { state, lastSavedAt, setLastSavedAt, fieldErrors, queueAnswer, queueStep, flush };
+  return {
+    state,
+    lastSavedAt,
+    setLastSavedAt,
+    fieldErrors,
+    queueAnswer,
+    queueStep,
+    discardAnswers,
+    flush,
+  };
 }

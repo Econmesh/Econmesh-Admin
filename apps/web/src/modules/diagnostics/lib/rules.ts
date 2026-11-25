@@ -7,11 +7,56 @@
 import type {
   AnswerValue,
   DiagnosticCatalog,
+  DiagnosticItem,
   DiagnosticQuestion,
   DiagnosticStep,
+  ItemKind,
 } from "@/services/dmc/diagnostics.service";
 
+/** Chave = id da pergunta ou ``<pergunta>@<item>`` (perguntas por item). */
 export type AnswerMap = Record<string, AnswerValue>;
+export type ItemRef = Pick<DiagnosticItem, "id" | "kind">;
+
+/** Separador entre pergunta e item na chave da resposta (igual ao backend). */
+export const ITEM_KEY_SEPARATOR = "@";
+
+export function responseKey(questionId: string, itemId?: string | null): string {
+  return itemId ? `${questionId}${ITEM_KEY_SEPARATOR}${itemId}` : questionId;
+}
+
+export function splitKey(key: string): { questionId: string; itemId: string | null } {
+  const index = key.indexOf(ITEM_KEY_SEPARATOR);
+  if (index < 0) return { questionId: key, itemId: null };
+  return { questionId: key.slice(0, index), itemId: key.slice(index + 1) || null };
+}
+
+export type QuestionInstance = {
+  question: DiagnosticQuestion;
+  itemId: string | null;
+  key: string;
+};
+
+export function itemsOf<T extends ItemRef>(items: T[], kind: ItemKind | null): T[] {
+  return items.filter((item) => item.kind === kind);
+}
+
+/** Instâncias na ordem do catálogo: perguntas por item repetem-se para cada item. */
+export function questionInstances(
+  catalog: DiagnosticCatalog,
+  items: ItemRef[],
+): QuestionInstance[] {
+  const result: QuestionInstance[] = [];
+  for (const question of catalog.questions) {
+    if (!question.per_item) {
+      result.push({ question, itemId: null, key: question.id });
+      continue;
+    }
+    for (const item of itemsOf(items, question.per_item)) {
+      result.push({ question, itemId: item.id, key: responseKey(question.id, item.id) });
+    }
+  }
+  return result;
+}
 
 export function isAnswered(value: AnswerValue | undefined): boolean {
   if (value == null) return false;
@@ -19,9 +64,30 @@ export function isAnswered(value: AnswerValue | undefined): boolean {
   return value.trim().length > 0;
 }
 
-export function isQuestionVisible(question: DiagnosticQuestion, values: AnswerMap): boolean {
+export function isInstanceAnswered(
+  instance: QuestionInstance,
+  values: AnswerMap,
+  items: ItemRef[],
+): boolean {
+  if (instance.question.type === "item_list") {
+    return itemsOf(items, instance.question.item_kind).length > 0;
+  }
+  return isAnswered(values[instance.key]);
+}
+
+export function isQuestionVisible(
+  question: DiagnosticQuestion,
+  values: AnswerMap,
+  itemId: string | null = null,
+  catalog?: DiagnosticCatalog,
+): boolean {
   return question.show_if.every((condition) => {
-    const current = values[condition.question_id];
+    const source = catalog?.questions.find((q) => q.id === condition.question_id);
+    const key =
+      itemId && (!source || source.per_item)
+        ? responseKey(condition.question_id, itemId)
+        : condition.question_id;
+    const current = values[key];
     if (condition.operator === "in") {
       return typeof current === "string" && condition.values.includes(current);
     }
@@ -32,31 +98,36 @@ export function isQuestionVisible(question: DiagnosticQuestion, values: AnswerMa
   });
 }
 
-/** Ids visíveis, resolvendo dependências encadeadas (mesma regra do backend). */
-export function visibleQuestionIds(catalog: DiagnosticCatalog, values: AnswerMap): Set<string> {
+/** Chaves visíveis, resolvendo dependências encadeadas por item (mesma regra do backend). */
+export function visibleKeys(
+  catalog: DiagnosticCatalog,
+  values: AnswerMap,
+  items: ItemRef[],
+): Set<string> {
   const effective: AnswerMap = {};
   const visible = new Set<string>();
-  for (const question of catalog.questions) {
-    if (isQuestionVisible(question, effective)) {
-      visible.add(question.id);
-      effective[question.id] = values[question.id] ?? null;
+  for (const instance of questionInstances(catalog, items)) {
+    if (isQuestionVisible(instance.question, effective, instance.itemId, catalog)) {
+      visible.add(instance.key);
+      effective[instance.key] = values[instance.key] ?? null;
     }
   }
   return visible;
 }
 
-/** Perguntas com resposta que deixariam de ser aplicáveis após a mudança. */
+/** Instâncias com resposta que deixariam de ser aplicáveis após a mudança. */
 export function answersHiddenByChange(
   catalog: DiagnosticCatalog,
   values: AnswerMap,
-  questionId: string,
+  items: ItemRef[],
+  key: string,
   nextValue: AnswerValue,
-): DiagnosticQuestion[] {
-  const before = visibleQuestionIds(catalog, values);
-  const after = visibleQuestionIds(catalog, { ...values, [questionId]: nextValue });
-  return catalog.questions.filter(
-    (question) =>
-      before.has(question.id) && !after.has(question.id) && isAnswered(values[question.id]),
+): QuestionInstance[] {
+  const before = visibleKeys(catalog, values, items);
+  const after = visibleKeys(catalog, { ...values, [key]: nextValue }, items);
+  return questionInstances(catalog, items).filter(
+    (instance) =>
+      before.has(instance.key) && !after.has(instance.key) && isAnswered(values[instance.key]),
   );
 }
 
@@ -67,16 +138,12 @@ export type LocalStepProgress = {
   optionalAnswered: number;
   notApplicable: number;
   percent: number;
+  /** Chaves das obrigatórias pendentes. */
   missing: string[];
 };
 
-export function stepProgress(
-  catalog: DiagnosticCatalog,
-  step: DiagnosticStep,
-  values: AnswerMap,
-  visible = visibleQuestionIds(catalog, values),
-): LocalStepProgress {
-  const progress: LocalStepProgress = {
+function emptyProgress(): LocalStepProgress {
+  return {
     requiredTotal: 0,
     requiredAnswered: 0,
     optionalTotal: 0,
@@ -85,22 +152,9 @@ export function stepProgress(
     percent: 0,
     missing: [],
   };
-  for (const question of catalog.questions) {
-    if (question.step_id !== step.id) continue;
-    if (!visible.has(question.id)) {
-      progress.notApplicable += 1;
-      continue;
-    }
-    const answered = isAnswered(values[question.id]);
-    if (question.required) {
-      progress.requiredTotal += 1;
-      if (answered) progress.requiredAnswered += 1;
-      else progress.missing.push(question.id);
-    } else {
-      progress.optionalTotal += 1;
-      if (answered) progress.optionalAnswered += 1;
-    }
-  }
+}
+
+function finish(progress: LocalStepProgress): LocalStepProgress {
   progress.percent =
     progress.requiredTotal === 0
       ? 100
@@ -108,17 +162,88 @@ export function stepProgress(
   return progress;
 }
 
-export function overallProgress(catalog: DiagnosticCatalog, values: AnswerMap): number {
-  const visible = visibleQuestionIds(catalog, values);
+/** Progresso de um conjunto de instâncias (etapa, seção ou item). */
+export function instancesProgress(
+  instances: QuestionInstance[],
+  values: AnswerMap,
+  items: ItemRef[],
+  visible: Set<string>,
+): LocalStepProgress {
+  const progress = emptyProgress();
+  for (const instance of instances) {
+    if (!visible.has(instance.key)) {
+      progress.notApplicable += 1;
+      continue;
+    }
+    const answered = isInstanceAnswered(instance, values, items);
+    if (instance.question.required) {
+      progress.requiredTotal += 1;
+      if (answered) progress.requiredAnswered += 1;
+      else progress.missing.push(instance.key);
+    } else {
+      progress.optionalTotal += 1;
+      if (answered) progress.optionalAnswered += 1;
+    }
+  }
+  return finish(progress);
+}
+
+export function stepProgress(
+  catalog: DiagnosticCatalog,
+  step: DiagnosticStep,
+  values: AnswerMap,
+  items: ItemRef[],
+  visible = visibleKeys(catalog, values, items),
+): LocalStepProgress {
+  return instancesProgress(
+    questionInstances(catalog, items).filter((instance) => instance.question.step_id === step.id),
+    values,
+    items,
+    visible,
+  );
+}
+
+export function overallProgress(
+  catalog: DiagnosticCatalog,
+  values: AnswerMap,
+  items: ItemRef[],
+): number {
+  const visible = visibleKeys(catalog, values, items);
   let total = 0;
   let done = 0;
   for (const step of catalog.steps) {
     if (step.availability !== "available") continue;
-    const progress = stepProgress(catalog, step, values, visible);
+    const progress = stepProgress(catalog, step, values, items, visible);
     total += progress.requiredTotal;
     done += progress.requiredAnswered;
   }
   return total === 0 ? 100 : Math.round((done * 100) / total);
+}
+
+/** Progresso de cada item em todas as etapas disponíveis (para o cadastro e as sanfonas). */
+export function itemProgress(
+  catalog: DiagnosticCatalog,
+  values: AnswerMap,
+  items: ItemRef[],
+  visible: Set<string>,
+): Map<string, LocalStepProgress> {
+  const available = new Set(
+    catalog.steps.filter((step) => step.availability === "available").map((step) => step.id),
+  );
+  const instances = questionInstances(catalog, items).filter(
+    (instance) => instance.itemId && available.has(instance.question.step_id),
+  );
+  return new Map(
+    items.map((item) => [
+      item.id,
+      instancesProgress(
+        instances.filter((instance) => instance.itemId === item.id),
+        values,
+        items,
+        visible,
+      ),
+    ]),
+  );
 }
 
 export function questionLabel(question: DiagnosticQuestion): string {

@@ -13,7 +13,11 @@ export type QuestionType =
   | "phone"
   | "tax_id"
   | "single_choice"
-  | "multi_choice";
+  | "multi_choice"
+  /** Cadastro de itens (1.1 produtos, 1.7 resíduos) — via endpoints de itens. */
+  | "item_list";
+/** Tipos de item cadastráveis no diagnóstico. */
+export type ItemKind = "product" | "waste";
 export type ConditionOperator = "in" | "contains_any";
 
 export type DiagnosticOption = {
@@ -29,6 +33,7 @@ export type DiagnosticAlert = {
   question_id: string;
   level: "critical" | "warning";
   message: string;
+  item_id?: string | null;
 };
 export type DiagnosticCondition = {
   question_id: string;
@@ -59,6 +64,17 @@ export type DiagnosticQuestion = {
   objective: string | null;
   registry_field: string | null;
   read_only: boolean;
+  /** Pergunta respondida uma vez para cada item deste tipo. */
+  per_item: ItemKind | null;
+  /** Para ``item_list``: tipo de item cadastrado. */
+  item_kind: ItemKind | null;
+};
+
+export type DiagnosticItemReference = {
+  kind: ItemKind;
+  question_ids: string[];
+  title: string;
+  description: string | null;
 };
 
 export type DiagnosticSection = {
@@ -66,6 +82,17 @@ export type DiagnosticSection = {
   step_id: string;
   title: string;
   description: string | null;
+  /** Reflexo somente leitura, por item, de respostas de outra etapa (ex.: 1.8 no Eixo 3). */
+  item_reference: DiagnosticItemReference | null;
+};
+
+export type DiagnosticItemKindMeta = {
+  kind: ItemKind;
+  label: string;
+  plural: string;
+  list_question_id: string;
+  description_label: string;
+  max_items: number;
 };
 
 export type DiagnosticStep = {
@@ -93,6 +120,17 @@ export type DiagnosticCatalog = {
   sections: DiagnosticSection[];
   questions: DiagnosticQuestion[];
   pillars: DiagnosticPillar[];
+  item_kinds: DiagnosticItemKindMeta[];
+};
+
+/** Produto (1.1) ou resíduo (1.7) cadastrado no diagnóstico. */
+export type DiagnosticItem = {
+  id: string;
+  kind: ItemKind;
+  name: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 /* --------------------------------------------------------------- diagnóstico */
@@ -131,6 +169,27 @@ export type PillarScore = {
 
 export type EmsScore = { points: number; max_available: number };
 
+export type QuestionScore = {
+  question_id: string;
+  step_id: string;
+  pillar_id: string | null;
+  /** Média dos itens (perguntas gerais: a própria pontuação). */
+  points: number | null;
+  worst_points: number | null;
+  max_points: number;
+  ems_weight: number;
+  per_item: boolean;
+  answered_items: number;
+  total_items: number;
+  items: { item_id: string; points: number | null }[];
+};
+
+export type ScoreSet = {
+  aggregation: "average" | "worst";
+  pillars: PillarScore[];
+  ems: EmsScore;
+};
+
 export type DiagnosticEvaluation = {
   steps: StepProgress[];
   progress: number;
@@ -139,8 +198,12 @@ export type DiagnosticEvaluation = {
   pillars: PillarScore[];
   ems: EmsScore;
   complete: boolean;
+  /** Chaves visíveis: ``q09`` ou ``q10@<item>`` (perguntas por item). */
   visible_question_ids: string[];
   alerts?: DiagnosticAlert[];
+  question_scores?: QuestionScore[];
+  /** Mesmo cálculo considerando o pior item de cada pergunta. */
+  worst_case?: ScoreSet | null;
 };
 
 export type CompanySnapshot = {
@@ -172,7 +235,9 @@ export type DiagnosticDetail = DiagnosticSummary & {
   catalog_version: string;
   company: CompanySnapshot;
   agent_name: string | null;
+  /** Chave = id da pergunta ou ``<pergunta>@<item>``. */
   responses: Record<string, DiagnosticResponse>;
+  items: DiagnosticItem[];
   evaluation: DiagnosticEvaluation;
   can_edit: boolean;
 };
@@ -232,6 +297,8 @@ export type ReportPillar = {
   answered: number;
   total: number;
   reading: string | null;
+  worst_points?: number | null;
+  worst_ems_points?: number | null;
 };
 export type ReportIndicator = {
   question_id: string;
@@ -249,6 +316,15 @@ export type ReportIndicator = {
   ems_points: number | null;
   tier: "high" | "medium" | "low" | "unanswered";
   interpretation: string | null;
+  per_item?: boolean;
+  worst_points?: number | null;
+  items?: {
+    item_id: string;
+    item_name: string;
+    answer: string | null;
+    points: number | null;
+    tier: "high" | "medium" | "low" | "unanswered";
+  }[];
 };
 export type ReportFinding = {
   title: string;
@@ -272,6 +348,23 @@ export type ReportAnswerItem = {
   points: number | null;
   max_points: number | null;
   pillar_code: string | null;
+};
+export type ReportAnswerSection = {
+  title: string;
+  answers: ReportAnswerItem[];
+  item_id?: string | null;
+  item_name?: string | null;
+  item_kind?: ItemKind | null;
+};
+export type ReportItem = {
+  id: string;
+  kind: ItemKind;
+  kind_label: string;
+  name: string;
+  description: string | null;
+  sections: ReportAnswerSection[];
+  points: number;
+  max_points: number;
 };
 export type MaturityReport = {
   diagnostic_id: string;
@@ -312,6 +405,8 @@ export type MaturityReport = {
     } | null;
     maturity_scale_defined: boolean;
     headline: string;
+    worst_case_score?: number | null;
+    worst_case_percent?: number | null;
   };
   axes: ReportAxis[];
   pillars: ReportPillar[];
@@ -346,8 +441,11 @@ export type MaturityReport = {
     step_id: string;
     title: string;
     status: "identification" | "evaluated" | "maintenance";
-    sections: { title: string; answers: ReportAnswerItem[] }[];
+    sections: ReportAnswerSection[];
   }[];
+  /** Produtos (1.1) e resíduos (1.7) com as avaliações individuais. */
+  products?: ReportItem[];
+  wastes?: ReportItem[];
 };
 
 const BASE = "/dmc/diagnostics";
@@ -380,6 +478,17 @@ export const diagnosticsService = {
   },
   saveResponses(id: string, body: { answers: AnswerInput[]; current_step?: string | null }) {
     return api.patch<DiagnosticDetail>(`${BASE}/${id}/responses`, body, { auth: true });
+  },
+  /** Cadastra produto/resíduo — gera suas perguntas nos eixos. */
+  addItem(id: string, body: { kind: ItemKind; name: string; description?: string | null }) {
+    return api.post<DiagnosticDetail>(`${BASE}/${id}/items`, body, { auth: true });
+  },
+  updateItem(id: string, itemId: string, body: { name?: string; description?: string | null }) {
+    return api.patch<DiagnosticDetail>(`${BASE}/${id}/items/${itemId}`, body, { auth: true });
+  },
+  /** Exclui o item e todas as respostas vinculadas a ele. */
+  deleteItem(id: string, itemId: string) {
+    return api.delete<DiagnosticDetail>(`${BASE}/${id}/items/${itemId}`, { auth: true });
   },
   completeStep(id: string, stepId: string) {
     return api.post<DiagnosticDetail>(`${BASE}/${id}/steps/${stepId}/complete`, {}, { auth: true });
