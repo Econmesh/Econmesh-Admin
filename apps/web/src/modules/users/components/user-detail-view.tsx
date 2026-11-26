@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { UserAccessGrantCard } from "@/modules/billing/components/user-access-grant-card";
+import { DmcAgentPanel } from "@/modules/dmc/components/dmc-agent-panel";
 import { ProfileView } from "@/modules/profile/components/profile-view";
 import { DeleteUserDialog } from "@/modules/users/components/delete-user-dialog";
 import { UserVisualSignaturesCard } from "@/modules/users/components/user-visual-signatures-card";
@@ -101,6 +102,8 @@ export function UserDetailView({
             </dl>
           </CardContent>
         </Card>
+
+        {user.role === "dmc_agent" ? <DmcAgentPanel userId={user.id} /> : null}
 
         <UserAccessGrantCard userId={user.id} />
 

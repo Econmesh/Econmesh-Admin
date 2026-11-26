@@ -1,4 +1,4 @@
-export type Role = "admin" | "operator" | "analyst" | "viewer" | "service";
+export type Role = "admin" | "operator" | "analyst" | "viewer" | "service" | "dmc_agent";
 
 export interface ApiErrorBody {
   code: string;
@@ -664,7 +664,7 @@ export type SupportTicketSource = "internal" | "external" | "contact_request" | 
 
 export type SupportContactInterest = "dmc" | "mri";
 
-export type SupportMessageType = "user_message" | "admin_reply" | "internal_note";
+export type SupportMessageType = "user_message" | "admin_reply" | "agent_reply" | "internal_note";
 
 export interface SupportTicket {
   id: string;
@@ -683,6 +683,8 @@ export interface SupportTicket {
   status: SupportTicketStatus;
   assigned_admin_id?: string | null;
   assigned_admin_name?: string | null;
+  assigned_agent_id?: string | null;
+  assigned_agent_name?: string | null;
   closed_by?: string | null;
   closed_at?: string | null;
   last_message_at?: string | null;

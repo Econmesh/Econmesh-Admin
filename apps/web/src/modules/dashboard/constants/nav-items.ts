@@ -1,6 +1,7 @@
 import {
   Bell,
   Building2,
+  ClipboardCheck,
   CreditCard,
   FileStack,
   FileText,
@@ -18,15 +19,26 @@ import {
 } from "lucide-react";
 import type { Route } from "next";
 
+import type { Role } from "@/types/api";
+
 export type DashboardNavItem = {
   href: Route;
   label: string;
   shortLabel: string;
   icon: LucideIcon;
+  roles?: Role[];
 };
 
+const DMC_AND_ADMIN: Role[] = ["admin", "dmc_agent"];
+
 export const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
-  { href: "/dashboard", label: "Dashboard", shortLabel: "Início", icon: LayoutDashboard },
+  {
+    href: "/dashboard",
+    label: "Dashboard",
+    shortLabel: "Início",
+    icon: LayoutDashboard,
+    roles: DMC_AND_ADMIN,
+  },
   {
     href: "/dashboard/usuarios",
     label: "Usuários",
@@ -38,18 +50,28 @@ export const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     label: "Empresas",
     shortLabel: "Empresas",
     icon: Building2,
+    roles: DMC_AND_ADMIN,
+  },
+  {
+    href: "/dashboard/diagnosticos" as Route,
+    label: "Diagnósticos",
+    shortLabel: "DMC",
+    icon: ClipboardCheck,
+    roles: ["dmc_agent"],
   },
   {
     href: "/dashboard/oportunidades",
     label: "Oportunidades",
     shortLabel: "Oportun.",
     icon: Target,
+    roles: DMC_AND_ADMIN,
   },
   {
     href: "/dashboard/conversas",
     label: "Conversas",
     shortLabel: "Conversas",
     icon: MessageCircle,
+    roles: DMC_AND_ADMIN,
   },
   {
     href: "/dashboard/minutas",
@@ -64,7 +86,13 @@ export const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     shortLabel: "Seções",
     icon: FileStack,
   },
-  { href: "/dashboard/suporte", label: "Suporte", shortLabel: "Suporte", icon: Headphones },
+  {
+    href: "/dashboard/suporte",
+    label: "Suporte",
+    shortLabel: "Suporte",
+    icon: Headphones,
+    roles: DMC_AND_ADMIN,
+  },
   { href: "/dashboard/blog", label: "Blog", shortLabel: "Blog", icon: FileText },
   {
     href: "/dashboard/planos" as Route,
@@ -95,8 +123,36 @@ export const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     label: "Notificações",
     shortLabel: "Notif.",
     icon: Bell,
+    roles: DMC_AND_ADMIN,
   },
 ];
+
+export function navItemsForRole(role: Role | undefined): DashboardNavItem[] {
+  return DASHBOARD_NAV_ITEMS.filter((item) => {
+    if (!item.roles) return role === "admin";
+    return role != null && item.roles.includes(role);
+  });
+}
+
+export function isDmcPathAllowed(pathname: string): boolean {
+  if (pathname === "/dashboard" || pathname === "/profile") return true;
+  const allowed = [
+    "/dashboard/empresas",
+    "/dashboard/diagnosticos",
+    "/dashboard/oportunidades",
+    "/dashboard/conversas",
+    "/dashboard/suporte",
+    "/dashboard/notificacoes",
+  ];
+  const inModule = allowed.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+  if (!inModule) return false;
+  if (pathname.includes("/nova") || pathname.includes("/editar") || pathname.includes("/grupos")) {
+    return false;
+  }
+  return true;
+}
 
 export function isDashboardNavActive(pathname: string, href: Route): boolean {
   if (href === "/dashboard") {

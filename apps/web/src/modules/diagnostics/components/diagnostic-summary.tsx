@@ -1,0 +1,96 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@econmesh-admin/ui/components/card";
+import { Info } from "lucide-react";
+
+import { ProgressIndicator } from "@/modules/diagnostics/components/progress-indicator";
+import type {
+  DiagnosticCatalog,
+  DiagnosticEvaluation,
+} from "@/services/dmc/diagnostics.service";
+
+function formatPoints(value: number): string {
+  return value.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+}
+
+/** Pontuação calculada pelo backend: pilares de cálculo e EMS parcial. */
+export function ScoreIndicator({
+  catalog,
+  evaluation,
+}: {
+  catalog: DiagnosticCatalog;
+  evaluation: DiagnosticEvaluation;
+}) {
+  const pillarNames = new Map(catalog.pillars.map((pillar) => [pillar.id, pillar]));
+  const emsPercent =
+    evaluation.ems.max_available > 0
+      ? (evaluation.ems.points * 100) / evaluation.ems.max_available
+      : 0;
+  // Diagnósticos concluídos antes da ativação de todos os eixos têm EMS parcial.
+  const partial = evaluation.ems.max_available < 100;
+  const worst = evaluation.worst_case;
+  return (
+    <Card className="rounded-xl">
+      <CardHeader>
+        <CardTitle className="text-base">Indicadores calculados</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Pontuação apurada nas perguntas pontuadas dos eixos disponíveis.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <div className="grid gap-4 sm:grid-cols-2">
+          {evaluation.pillars.map((pillar) => {
+            const meta = pillarNames.get(pillar.pillar_id);
+            return (
+              <div key={pillar.pillar_id} className="space-y-2 rounded-lg border p-4">
+                <p className="text-xs font-medium text-muted-foreground">
+                  {meta?.name}
+                  {meta?.ems_weight != null ? ` · ${meta.ems_weight}% do EMS` : ""}
+                </p>
+                <p className="text-2xl font-semibold">
+                  {formatPoints(pillar.points)}
+                  <span className="text-sm font-normal text-muted-foreground">
+                    {" "}
+                    / {pillar.max_points} pts
+                  </span>
+                </p>
+                <ProgressIndicator value={pillar.percent ?? 0} size="sm" label={meta?.code} />
+                <p className="text-xs text-muted-foreground">
+                  {pillar.answered} de {pillar.total} indicadores respondidos
+                </p>
+              </div>
+            );
+          })}
+        </div>
+        <div className="space-y-2 rounded-lg border bg-muted/30 p-4">
+          <p className="text-xs font-medium text-muted-foreground">
+            {partial ? "EMS parcial" : "EMS"}
+          </p>
+          <p className="text-2xl font-semibold">
+            {formatPoints(evaluation.ems.points)}
+            <span className="text-sm font-normal text-muted-foreground">
+              {" "}
+              / {formatPoints(evaluation.ems.max_available)} pts
+              {partial ? " possíveis nos eixos disponíveis" : ""}
+            </span>
+          </p>
+          <ProgressIndicator value={emsPercent} size="sm" />
+          {worst && Math.abs(worst.ems.points - evaluation.ems.points) >= 0.01 ? (
+            <p className="text-xs text-muted-foreground">
+              Pior caso entre produtos/resíduos:{" "}
+              <span className="font-medium text-foreground">
+                {formatPoints(worst.ems.points)} / {formatPoints(worst.ems.max_available)} pts
+              </span>{" "}
+              — o score considera a média dos itens.
+            </p>
+          ) : null}
+          <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+            <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+            {partial
+              ? "Eixos em manutenção não entram no cálculo. "
+              : "Pontuação ponderada pelos pesos de cada indicador no EMS. "}
+            O nível de maturidade será apresentado no relatório final.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

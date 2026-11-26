@@ -7,6 +7,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { useAuth } from "@/hooks/use-auth";
+import { DmcNotificationsView } from "@/modules/dmc/components/dmc-notifications";
 import { NotificationCampaignList } from "@/modules/notifications/components/notification-campaign-list";
 import type { CampaignTargetLookups } from "@/modules/notifications/utils";
 import {
@@ -23,6 +25,12 @@ const EMPTY_LOOKUPS: CampaignTargetLookups = {
 };
 
 export default function NotificacoesPage() {
+  const { user } = useAuth();
+  if (user?.role === "dmc_agent") return <DmcNotificationsView />;
+  return <AdminNotificacoesPage />;
+}
+
+function AdminNotificacoesPage() {
   const [campaigns, setCampaigns] = useState<NotificationCampaign[]>([]);
   const [lookups, setLookups] = useState<CampaignTargetLookups>(EMPTY_LOOKUPS);
   const [loading, setLoading] = useState(true);

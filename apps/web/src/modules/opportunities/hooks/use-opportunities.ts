@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { OPPORTUNITY_LIST_PAGE_SIZE } from "@/modules/opportunities/constants";
+import { useAuth } from "@/hooks/use-auth";
 import { adminOpportunitiesService } from "@/services/admin/opportunities.service";
+import { dmcAgentService } from "@/services/dmc/dmc.service";
 import type { Opportunity, OpportunityListParams } from "@/types/api";
 import { ApiError } from "@/utils/errors";
 
@@ -29,6 +31,9 @@ export function useOpportunities(
 	const [total, setTotal] = useState(0);
 	const [page, setPage] = useState(1);
 	const paramsRef = useRef(params);
+	const { user } = useAuth();
+	const listOpportunities =
+		user?.role === "dmc_agent" ? dmcAgentService.opportunities : adminOpportunitiesService.list;
 
 	const fetchPage = useCallback(
 		async (pageToLoad: number, append: boolean) => {
@@ -40,7 +45,7 @@ export function useOpportunities(
 			setError(null);
 
 			try {
-				const response = await adminOpportunitiesService.list({
+				const response = await listOpportunities({
 					...params,
 					page: pageToLoad,
 					page_size: OPPORTUNITY_LIST_PAGE_SIZE,
@@ -66,7 +71,7 @@ export function useOpportunities(
 				setLoadingMore(false);
 			}
 		},
-		[params],
+		[params, listOpportunities],
 	);
 
 	useEffect(() => {

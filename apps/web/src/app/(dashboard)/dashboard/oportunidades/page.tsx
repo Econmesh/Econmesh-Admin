@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { OpportunityFilters } from "@/modules/opportunities/components/opportunity-filters";
 import { OpportunityList } from "@/modules/opportunities/components/opportunity-list";
 import { useDebouncedValue } from "@/modules/opportunities/hooks/use-debounced-value";
+import { useAuth } from "@/hooks/use-auth";
 import { useOpportunities } from "@/modules/opportunities/hooks/use-opportunities";
 import type { OpportunityListParams } from "@/types/api";
 
@@ -17,6 +18,8 @@ const DEFAULT_FILTERS: OpportunityListParams = {
 };
 
 export default function OportunidadesPage() {
+  const { user } = useAuth();
+  const readOnly = user?.role === "dmc_agent";
   const [filters, setFilters] = useState<OpportunityListParams>(DEFAULT_FILTERS);
   const [search, setSearch] = useState("");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
@@ -45,7 +48,9 @@ export default function OportunidadesPage() {
         <div>
           <h1 className="text-2xl font-semibold">Oportunidades</h1>
           <p className="text-sm text-muted-foreground">
-            Visualize e modere todas as oportunidades da plataforma.
+            {readOnly
+              ? "Consulta somente leitura. Criar, editar e alterar oportunidades não está disponível para o Agente DMC."
+              : "Visualize e modere todas as oportunidades da plataforma."}
           </p>
         </div>
       </div>

@@ -7,6 +7,7 @@ export const ROLE_OPTIONS: { value: Role; label: string }[] = [
   { value: "analyst", label: "Analista" },
   { value: "operator", label: "Operador" },
   { value: "admin", label: "Administrador" },
+  { value: "dmc_agent", label: "Agente DMC" },
 ];
 
 export const adminUserCreateSchema = z
@@ -16,7 +17,7 @@ export const adminUserCreateSchema = z
     phone: z.string().optional(),
     password: z.string().min(8, "Mínimo 8 caracteres"),
     password_confirm: z.string().min(8, "Confirme a senha"),
-    role: z.enum(["admin", "operator", "analyst", "viewer", "service"]),
+    role: z.enum(["admin", "operator", "analyst", "viewer", "service", "dmc_agent"]),
     auto_confirm: z.boolean().default(true),
   })
   .refine((data) => data.password === data.password_confirm, {
@@ -29,7 +30,7 @@ export type AdminUserCreateFormValues = z.infer<typeof adminUserCreateSchema>;
 export const adminUserUpdateSchema = z.object({
   name: z.string().min(2).optional(),
   phone: z.string().optional().nullable(),
-  role: z.enum(["admin", "operator", "analyst", "viewer", "service"]).optional(),
+  role: z.enum(["admin", "operator", "analyst", "viewer", "service", "dmc_agent"]).optional(),
   is_active: z.boolean().optional(),
 });
 

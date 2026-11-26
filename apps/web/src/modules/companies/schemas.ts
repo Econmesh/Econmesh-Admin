@@ -4,7 +4,7 @@ function stripNonDigits(value: string): string {
   return value.replace(/\D/g, "");
 }
 
-function isValidCnpj(cnpj: string): boolean {
+export function isValidCnpj(cnpj: string): boolean {
   const digits = stripNonDigits(cnpj);
   if (digits.length !== 14) return false;
   if (/^(\d)\1+$/.test(digits)) return false;
